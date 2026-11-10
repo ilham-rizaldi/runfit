@@ -228,8 +228,13 @@ details[open] > summary .chevron { transform: rotate(45deg); }
 .fit-tag small { color: #9ac2b2; font-size: 9px; }
 .fit-tag.fit-priority { color: var(--lime); background: var(--soft-lime); }
 .fit-tag.fit-priority small { color: #b1ce8f; }
-.model-size { display: grid; gap: 3px; padding: 7px 8px; background: var(--panel-deep); border-radius: 7px; }
-.model-size-value { color: var(--lime); font: 650 12px/1.35 var(--mono); }
+.model-size { display: grid; gap: 6px; padding: 8px 10px; background: var(--panel-deep); border-radius: 7px; }
+.model-size-row { display: flex; gap: 6px; }
+.model-size-row + .model-size-row { padding-top: 6px; border-top: 1px solid var(--edge); }
+.model-size-cell { display: grid; gap: 2px; flex: 1; min-width: 0; }
+.model-size-label { color: var(--muted); font: 10px/1.25 var(--mono); }
+.model-size-value { color: var(--text); font: 650 15px/1.25 var(--mono); overflow-wrap: anywhere; }
+.model-size-cell:first-child .model-size-value { color: var(--lime); }
 .size-origin { color: var(--muted); font-size: 10px; }
 .sort-tag { align-self: center; color: var(--muted); font: 10px var(--mono); }
 .shoe-art-definitions { position: absolute; width: 0; height: 0; overflow: hidden; pointer-events: none; }

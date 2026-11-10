@@ -590,11 +590,17 @@ function modelCard(model, sort) {
     const chart = source.chart ?? source.brandChart;
     const hasOptions = recommendation.kind === 'choice' || recommendation.kind === 'multiple';
     const rows = hasOptions ? recommendation.candidates : [recommendation.primary];
-    const systems = [[1, 'EU'], [2, state.fit === 'men' ? 'US M' : 'US W'], [3, 'UK'], [5, 'CM/JP']];
+    const systems = [[1, 'EU'], [2, state.fit === 'men' ? 'US M' : 'US W'], [3, 'UK'], [5, 'CM/JP']]
+      .filter(([index]) => rows.some(row => row[index] != null));
     for (const row of rows) {
-      const label = systems.filter(([index]) => row[index] != null)
-        .map(([index, system]) => system + ' ' + sizeText(row, index)).join(' · ');
-      size.append(node('span', 'model-size-value', label));
+      const sizeRow = node('span', 'model-size-row');
+      for (const [index, system] of systems) {
+        const cell = node('span', 'model-size-cell');
+        cell.append(node('span', 'model-size-label', system),
+          node('span', 'model-size-value', sizeText(row, index)));
+        sizeRow.append(cell);
+      }
+      size.append(sizeRow);
     }
     const scope = source.chart ? 'Model' : 'Brand';
     const label = chart.estimate ? scope + ' estimate' : scope + ' chart';
