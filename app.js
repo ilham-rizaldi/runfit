@@ -16,10 +16,34 @@ import { expandedGlobal, globalCatalogs } from './lineup-expanded-global.js';
 import { expandedMountain, mountainCatalogs } from './lineup-expanded-mountain.js';
 import { expandedSpecial, specialCatalogs } from './lineup-expanded-special.js';
 import { expandedRemaining, remainingCatalogs } from './lineup-expanded-remaining.js';
+import { coreProfiles } from './profiles-core.js';
+import { globalProfiles } from './profiles-global.js';
+import { mountainProfiles } from './profiles-mountain.js';
+import { specialProfiles } from './profiles-special.js';
+import { remainingProfiles } from './profiles-remaining.js';
+import { coreReviews } from './reviews-core.js';
+import { globalReviews } from './reviews-global.js';
+import { mountainReviews } from './reviews-mountain.js';
+import { specialReviews } from './reviews-special.js';
+import { remainingReviews } from './reviews-remaining.js';
+import { coreSpecs } from './specs-core.js';
+import { globalSpecs } from './specs-global.js';
+import { mountainSpecs } from './specs-mountain.js';
+import { specialSpecs } from './specs-special.js';
+import { remainingSpecs } from './specs-remaining.js';
+import { shoeImageSources } from './shoe-image-sources.js';
+import { coreShoeImages } from './shoe-image-core.js';
+import { globalShoeImages } from './shoe-image-global.js';
+import { trailShoeImages } from './shoe-image-trail.js';
+import { installOutlineFilter, renderShoeArt } from './shoe-art.js';
 
 const brands = [...core, ...major, ...trail, ...more];
 const brandWidths = { ...coreWidths, ...majorWidths, ...trailWidths, ...moreWidths };
 const modelWidths = { ...coreModelWidths, ...majorModelWidths, ...trailModelWidths };
+const profiles = { ...coreProfiles, ...globalProfiles, ...mountainProfiles, ...specialProfiles, ...remainingProfiles };
+const reviews = { ...coreReviews, ...globalReviews, ...mountainReviews, ...specialReviews, ...remainingReviews };
+const specs = { ...coreSpecs, ...globalSpecs, ...mountainSpecs, ...specialSpecs, ...remainingSpecs };
+const shoeImages = { ...shoeImageSources, ...coreShoeImages, ...globalShoeImages, ...trailShoeImages };
 const brandKey = name => name.split(' · ')[0];
 const modelKey = ({ brand, name }) => brand + ' ' + name;
 const examples = Object.entries(categories).flatMap(([surface, group]) => group.flatMap(category =>
@@ -33,7 +57,7 @@ for (const model of [...examples, ...mainLineup, ...trailLineup, ...moreLineup, 
 }
 const lineup = [...productMap.values()];
 const surfaceNames = { road: 'Road', trail: 'Trail' };
-const categoryNames = Object.fromEntries(Object.values(categories).flat().map(category => [category.id, category.name]));
+const categoryById = Object.fromEntries(Object.values(categories).flat().map(category => [category.id, category]));
 const typeGuides = {
   road: 'https://www.asics.com/gb/en-gb/asics-advice/asics-running-shoes-which-ones-are-right-for-you/',
   trail: 'https://www.salomon.com/en-gb/sg/a/how-to-choose-your-trail-running-shoes'
@@ -362,8 +386,61 @@ function modelSizeSource(model) {
   return { label: 'Sizing guide unavailable' };
 }
 
+function modelCharacteristics(profile, review, category) {
+  const section = node('div', 'model-characteristics');
+  const entries = node('dl');
+  const fields = [
+    ['What to expect', 'expect', category.features.join(' · ')],
+    ['Ride & feel', 'feel', 'Model-specific ride details unavailable.'],
+    ['Best when', 'best', category.summary]
+  ];
+  for (const [label, field, fallback] of fields) {
+    const entry = node('div');
+    const value = review?.[field] ?? profile?.[field];
+    const detail = node('dd', null, value ?? fallback);
+    const source = review?.[field] ? 'RunRepeat' : value ? 'Manufacturer' : field !== 'feel' ? 'Category guide' : '';
+    if (source) detail.append(document.createTextNode(' '), node('small', 'profile-source', source));
+    entry.append(node('dt', null, label), detail);
+    entries.append(entry);
+  }
+  section.append(entries);
+  return section;
+}
+
+function modelSpecifications(modelSpecs, width) {
+  const section = node('section', 'model-specifications');
+  const grid = node('dl', 'spec-grid');
+  const fields = [ ['Weight', 'weight'], ['Heel stack', 'heel'], ['Forefoot stack', 'forefoot'], ['Drop', 'drop'], ['Fit', 'fit'] ];
+  for (const [label, field] of fields) {
+    const variant = field === 'fit' && width?.options?.length;
+    const official = variant ? widthText(width) : modelSpecs?.official?.[field];
+    const value = official ?? modelSpecs?.lab?.[field];
+    const hasValue = value != null;
+    const formatted = !hasValue ? (field === 'fit' ? undisclosed : 'Unavailable')
+      : field === 'weight' ? fmt(value.g) + ' g'
+      : field === 'fit' ? value.replace(/^(?:medium|standard|regular)(?= width|$)/i, 'Normal') : fmt(value) + ' mm';
+    const item = node('div', field === 'fit' ? 'spec-item spec-fit' : 'spec-item');
+    const data = node('dd', hasValue ? 'spec-value' : 'spec-value unavailable', formatted);
+    item.append(node('dt', null, label), data);
+    if (hasValue) {
+      const source = node('dd', 'spec-meta');
+      const url = variant ? width.url : official != null ? modelSpecs.official.url : modelSpecs.lab.url;
+      source.append(externalLink(url, official != null ? 'Brand ↗' : 'RunRepeat lab ↗'));
+      if (field === 'weight') source.append(node('span', null, value.size ?? 'Size unspecified'));
+      item.append(source);
+    }
+    grid.append(item);
+  }
+  section.append(node('h4', null, 'Shoe specs'), grid);
+  return section;
+}
+
 function modelCard(model) {
   const width = modelWidth(model);
+  const category = categoryById[model.category];
+  const key = modelKey(model);
+  const profile = profiles[key];
+  const review = reviews[key];
   const source = modelSizeSource(model);
   const chart = source.chart;
   const eligible = chart && (!chart.fit || chart.fit === state.fit);
@@ -376,15 +453,21 @@ function modelCard(model) {
   plus.setAttribute('aria-hidden', 'true');
   heading.append(plus);
   const meta = node('span', 'lineup-card-meta');
-  meta.append(node('span', null, categoryNames[model.category]), node('span', null, widthText(width)));
+  meta.append(node('span', null, category.name), node('span', null, widthText(width)));
   const sizing = match?.primary && match.primary[1] != null
     ? 'EU ' + (match.kind === 'choice' || match.kind === 'multiple' ? [...new Set(match.candidates.map(row => sizeText(row, 1)))].join(' / ') : sizeText(match.primary, 1)) + ' · ' + source.label
     : source.label;
-  summary.append(heading, meta, node('span', 'lineup-sizing', sizing));
+  summary.append(heading, renderShoeArt(model, shoeImages[key]), meta);
+  const preview = review?.expect ?? profile?.expect;
+  if (preview) summary.append(node('span', 'lineup-preview', preview));
+  summary.append(node('span', 'lineup-sizing', sizing));
 
   const detail = node('div', 'lineup-detail');
+  detail.append(modelCharacteristics(profile, review, category), modelSpecifications(specs[key], width));
   const links = node('p', 'source-links');
+  if (review?.url) links.append(externalLink(review.url, 'RunRepeat review ↗'));
   links.append(externalLink(model.url, 'Official product ↗'));
+  if (profile?.url && profile.url !== model.url) links.append(externalLink(profile.url, 'Manufacturer notes ↗'));
   if (source.url) links.append(externalLink(source.url, source.label + ' ↗'));
   detail.append(links);
   if (model.sizeNote) detail.append(node('p', null, model.sizeNote));
@@ -419,7 +502,7 @@ function renderLineup() {
   const models = lineup.filter(model => model.surface === state.surface
     && (!lineupBrand.value || model.brand === lineupBrand.value)
     && (!lineupCategory.value || model.category === lineupCategory.value)
-    && terms.every(term => (modelKey(model) + ' ' + categoryNames[model.category]).toLowerCase().includes(term)));
+    && terms.every(term => (modelKey(model) + ' ' + categoryById[model.category].name).toLowerCase().includes(term)));
   const cards = models.slice(0, lineupLimit).map(modelCard);
   element('lineup-models').replaceChildren(...(cards.length ? cards : [node('p', 'empty', 'No models match these filters.')]));
   const count = cards.length < models.length ? cards.length + ' of ' + models.length : models.length;
@@ -475,9 +558,11 @@ form.addEventListener('submit', event => {
 });
 input.addEventListener('input', clearError);
 for (const control of document.querySelectorAll('input[name="surface"], input[name="lineup-surface"]')) {
+  control.disabled = false;
   control.addEventListener('change', () => setSurface(control.value));
 }
 for (const control of document.querySelectorAll('input[name="fit"]')) {
+  control.disabled = false;
   control.addEventListener('change', () => {
     state.fit = control.value;
     renderBrands();
@@ -492,8 +577,11 @@ lineupMore.addEventListener('click', () => {
   renderLineup();
 });
 
+installOutlineFilter();
 renderBrands();
 renderCategories();
 renderCatalogDirectory();
 updateLineupOptions();
 renderLineup();
+for (const control of [element('calculate-size'), lineupSearch, lineupBrand, lineupCategory]) control.disabled = false;
+for (const id of ['brands', 'lineup-models']) element(id).setAttribute('aria-busy', 'false');

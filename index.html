@@ -7,8 +7,18 @@
   <meta name="description" content="Compare running shoe sizes against official brand charts using your measured foot length. Find shoe categories for road and trail running.">
   <title>Runfit — Running Shoe Fit Calculator</title>
   <link rel="icon" type="image/svg+xml" href="icon.svg">
-  <link rel="stylesheet" href="style.css?v=chart-stripes">
-  <script type="module" src="app.js?v=fit-suggestions"></script>
+  <link rel="stylesheet" href="style.css?v=model-details">
+  <script type="module">
+    import('./app.js?v=model-details').catch(() => {
+      for (const id of ['brands', 'lineup-models']) {
+        const panel = document.getElementById(id);
+        panel.setAttribute('aria-busy', 'false');
+        panel.replaceChildren();
+      }
+      document.getElementById('results-meta').textContent = 'Could not load size charts. Refresh to try again.';
+      document.getElementById('lineup-meta').textContent = 'Could not load the lineup. Refresh to try again.';
+    });
+  </script>
 </head>
 <body>
   <a class="skip" href="#calculator">Skip to calculator</a>
@@ -55,11 +65,11 @@
         <fieldset class="control">
           <legend><span class="step">02</span> Running surface</legend>
           <div class="switch surface-switch">
-            <label><input type="radio" name="surface" value="road" checked><span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3 5 21M15 3l4 18M12 5v3m0 3v3m0 3v3"/></svg>Road</span></label>
-            <label><input type="radio" name="surface" value="trail"><span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m2 20 7-12 3 5 3-9 7 16H2Z"/></svg>Trail</span></label>
+            <label><input type="radio" name="surface" value="road" checked disabled><span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3 5 21M15 3l4 18M12 5v3m0 3v3m0 3v3"/></svg>Road</span></label>
+            <label><input type="radio" name="surface" value="trail" disabled><span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m2 20 7-12 3 5 3-9 7 16H2Z"/></svg>Trail</span></label>
           </div>
         </fieldset>
-        <button class="primary" type="submit">Find my size <span aria-hidden="true">↗</span></button>
+        <button id="calculate-size" class="primary" type="submit" disabled>Find my size <span aria-hidden="true">↗</span></button>
       </form>
       <p id="length-help" class="input-help">Measure heel to longest toe while standing. Use the longer foot.</p>
       <p id="error" class="error" role="alert" hidden></p>
@@ -75,14 +85,14 @@
         <fieldset class="fit-control">
           <legend class="sr-only">Sizing chart</legend>
           <div class="switch fit-switch">
-            <label><input type="radio" name="fit" value="men" checked><span>Men’s chart</span></label>
-            <label><input type="radio" name="fit" value="women"><span>Women’s chart</span></label>
+            <label><input type="radio" name="fit" value="men" checked disabled><span>Men’s chart</span></label>
+            <label><input type="radio" name="fit" value="women" disabled><span>Women’s chart</span></label>
           </div>
         </fieldset>
       </div>
       <div class="results-panel panel">
         <div class="table-heading row-grid" aria-hidden="true"><span>BRAND</span><span>EU</span><span>US</span><span>UK</span><span>FIT SUGGESTION</span><span></span></div>
-        <div id="brands"></div>
+        <div id="brands" aria-busy="true"><div class="loading-rows" aria-hidden="true"><span></span><span></span><span></span></div></div>
       </div>
       <details id="other-charts" class="other-charts panel" hidden>
         <summary><span id="other-title">Other charts</span><span class="chevron" aria-hidden="true">+</span></summary>
@@ -112,21 +122,21 @@
         <fieldset class="fit-control">
           <legend class="sr-only">Lineup running surface</legend>
           <div class="switch fit-switch">
-            <label><input type="radio" name="lineup-surface" value="road" checked><span>Road</span></label>
-            <label><input type="radio" name="lineup-surface" value="trail"><span>Trail</span></label>
+            <label><input type="radio" name="lineup-surface" value="road" checked disabled><span>Road</span></label>
+            <label><input type="radio" name="lineup-surface" value="trail" disabled><span>Trail</span></label>
           </div>
         </fieldset>
       </div>
       <div class="lineup-filters panel">
-        <label>Search models<input id="lineup-search" type="search" placeholder="e.g. Speedgoat or mud" autocomplete="off"></label>
-        <label>Brand<select id="lineup-brand"></select></label>
-        <label>Use<select id="lineup-category"></select></label>
+        <label>Search models<input id="lineup-search" type="search" placeholder="e.g. Speedgoat or mud" autocomplete="off" disabled></label>
+        <label>Brand<select id="lineup-brand" disabled><option>All brands</option></select></label>
+        <label>Use<select id="lineup-category" disabled><option>All uses</option></select></label>
       </div>
       <div class="lineup-toolbar">
-        <p id="lineup-meta" class="section-note lineup-meta" aria-live="polite"></p>
+        <p id="lineup-meta" class="section-note lineup-meta" aria-live="polite">Loading model lineup…</p>
         <div id="lineup-catalog-link"></div>
       </div>
-      <div id="lineup-models" class="lineup-grid"></div>
+      <div id="lineup-models" class="lineup-grid" aria-busy="true"><span class="loading-card panel" aria-hidden="true"></span><span class="loading-card panel" aria-hidden="true"></span><span class="loading-card panel" aria-hidden="true"></span></div>
       <button id="lineup-more" type="button" class="secondary lineup-more" hidden>Show more models</button>
       <details class="official-catalogs panel">
         <summary><span>Official brand catalogs</span><span class="chevron" aria-hidden="true">+</span></summary>
@@ -148,6 +158,7 @@
       <p class="method-note">Chart snapshot · 10 Nov 2026. Each result links to its manufacturer source and identifies the market. Road and Trail filter the brands and shoe categories. The same brand chart can apply to both surfaces.</p>
       <p class="method-note">Width labels describe options published for the cited market or model. Normal includes the labels Regular, Standard and Medium. Foot length cannot identify your width.</p>
       <p class="method-note">Fit suggestions use your foot length and the brand’s chart. Expand a result to see the measurements and any adjustments behind it.</p>
+      <p class="method-note">Shoe specs use brand figures first and RunRepeat lab figures where available. Weight is per shoe at the listed sample size.</p>
     </section>
   </main>
   <footer class="shell site-footer"><a class="wordmark" href="./"><img src="icon.svg" width="27" height="27" alt="">runfit<span>.</span></a><span>Independent running shoe size guide</span></footer>
