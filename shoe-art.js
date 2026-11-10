@@ -1,4 +1,4 @@
-import { auditedShoePhotos, shoeArtLayout } from './shoe-art-layout.js?v=artwork-salomon-hoka';
+import { auditedShoePhotos, shoeArtLayout } from './shoe-art-layout.js?v=artwork-on-puma-altra';
 
 const svgNamespace = 'http://www.w3.org/2000/svg';
 const outlineId = 'runfit-shoe-outline';
