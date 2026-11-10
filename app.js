@@ -35,7 +35,7 @@ import { shoeImageSources } from './shoe-image-sources.js';
 import { coreShoeImages } from './shoe-image-core.js';
 import { globalShoeImages } from './shoe-image-global.js?v=clean-lineup';
 import { trailShoeImages } from './shoe-image-trail.js';
-import { installOutlineFilter, renderShoeArt } from './shoe-art.js?v=artwork-mizuno-trail';
+import { installOutlineFilter, renderShoeArt } from './shoe-art.js?v=artwork-kiprun-diadora';
 
 const brands = [...core, ...major, ...trail, ...more];
 const brandWidths = { ...coreWidths, ...majorWidths, ...trailWidths, ...moreWidths };
