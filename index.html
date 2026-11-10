@@ -7,9 +7,9 @@
   <meta name="description" content="Compare running shoe sizes against official brand charts using your measured foot length. Find shoe categories for road and trail running.">
   <title>Runfit — Running Shoe Fit Calculator</title>
   <link rel="icon" type="image/svg+xml" href="icon.svg">
-  <link rel="stylesheet" href="style.css?v=model-details">
+  <link rel="stylesheet" href="style.css?v=chart-results">
   <script type="module">
-    import('./app.js?v=model-details').catch(() => {
+    import('./app.js?v=chart-results').catch(() => {
       for (const id of ['brands', 'lineup-models']) {
         const panel = document.getElementById(id);
         panel.setAttribute('aria-busy', 'false');
@@ -91,7 +91,7 @@
         </fieldset>
       </div>
       <div class="results-panel panel">
-        <div class="table-heading row-grid" aria-hidden="true"><span>BRAND</span><span>EU</span><span>US</span><span>UK</span><span>FIT SUGGESTION</span><span></span></div>
+        <div class="table-heading row-grid" aria-hidden="true"><span>BRAND</span><span>EU</span><span>US</span><span>UK</span><span></span></div>
         <div id="brands" aria-busy="true"><div class="loading-rows" aria-hidden="true"><span></span><span></span><span></span></div></div>
       </div>
       <details id="other-charts" class="other-charts panel" hidden>
@@ -157,7 +157,7 @@
       </div>
       <p class="method-note">Chart snapshot · 10 Nov 2026. Each result links to its manufacturer source and identifies the market. Road and Trail filter the brands and shoe categories. The same brand chart can apply to both surfaces.</p>
       <p class="method-note">Width labels describe options published for the cited market or model. Normal includes the labels Regular, Standard and Medium. Foot length cannot identify your width.</p>
-      <p class="method-note">Fit suggestions use your foot length and the brand’s chart. Expand a result to see the measurements and any adjustments behind it.</p>
+      <p class="method-note">Expand a size result to see the chart measurements and any brand adjustments.</p>
       <p class="method-note">Shoe specs use brand figures first and RunRepeat lab figures where available. Weight is per shoe at the listed sample size.</p>
     </section>
   </main>

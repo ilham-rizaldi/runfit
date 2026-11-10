@@ -170,18 +170,9 @@ function fullChart(chart, label) {
   return disclosure;
 }
 
-function fitSuggestion(match, length) {
-  if (match.kind === 'choice') return 'Upsize or Downsize';
-  if (match.kind === 'nearest' && match.candidates.length > 1) {
-    return match.primary[0] < length ? 'Downsize' : 'Upsize';
-  }
-  if (match.kind === 'next' || match.kind === 'boundary' || match.rounded) return 'Upsize';
-  return 'True-to-Size';
-}
-
 function methodText(match) {
   switch (match.kind) {
-    case 'choice': return 'Choose the larger listed size for more room or the smaller one for a snugger fit.';
+    case 'choice': return 'Your foot length falls between these chart rows.';
     case 'multiple': return match.rounded
       ? 'The next larger chart row lists more than one size. Check your model before choosing.'
       : 'The manufacturer lists more than one size at this length. Check your model before choosing.';
@@ -200,10 +191,9 @@ function brandRow(brand, chart, match) {
   const key = brandKey(brand.name);
   const width = brandWidths[key];
   name.append(node('span', 'brand-name', brand.name), node('span', 'brand-width', widthText(width)));
-  const status = node('span', match.kind === 'exact' && !chart.estimate ? 'status exact' : 'status', fitSuggestion(match, state.length));
   const chevron = node('span', 'chevron', '+');
   chevron.setAttribute('aria-hidden', 'true');
-  summary.append(name, sizeCell(match, 1, 'EU'), sizeCell(match, 2, 'US'), sizeCell(match, 3, 'UK'), status, chevron);
+  summary.append(name, sizeCell(match, 1, 'EU'), sizeCell(match, 2, 'US'), sizeCell(match, 3, 'UK'), chevron);
 
   const detail = node('div', 'brand-details');
   if (chart.estimate) detail.append(node('p', null, 'Brand-guided estimate based on its measurement adjustment.'));
