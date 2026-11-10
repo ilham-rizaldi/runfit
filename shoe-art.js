@@ -1,7 +1,9 @@
-import { shoeArtLayout } from './shoe-art-layout.js';
+import { auditedShoePhotos, shoeArtLayout } from './shoe-art-layout.js?v=artwork-coverage';
 
 const svgNamespace = 'http://www.w3.org/2000/svg';
 const outlineId = 'runfit-shoe-outline';
+const directions = Object.values(shoeArtLayout);
+const targetFacesLeft = directions.filter(([, , , , facesLeft]) => facesLeft).length > directions.length / 2;
 
 function svgElement(tag, attributes = {}) {
   const element = document.createElementNS(svgNamespace, tag);
@@ -82,10 +84,13 @@ export function renderShoeArt(model, imageUrl, key) {
   const frame = document.createElement('span');
   frame.className = 'shoe-art-frame';
   const svg = svgElement('svg', { viewBox: '20 17 282 96', role: 'img', 'aria-label': 'Category illustration' });
-  svg.append(categoryOutline(model));
+  const illustration = categoryOutline(model);
+  if (targetFacesLeft) illustration.setAttribute('transform', 'translate(322 0) scale(-1 1)');
+  svg.append(illustration);
   frame.append(svg);
   const layout = shoeArtLayout[key];
-  if (imageUrl && layout) {
+  const source = auditedShoePhotos[key] ?? imageUrl;
+  if (source && layout) {
     const image = document.createElement('img');
     image.className = 'shoe-art-reference';
     image.alt = '';
@@ -94,10 +99,12 @@ export function renderShoeArt(model, imageUrl, key) {
     frame.setAttribute('aria-busy', 'true');
     image.addEventListener('load', () => {
       const [x, y, width, height, facesLeft] = layout;
+      const mirrored = facesLeft !== targetFacesLeft;
       const artRatio = height * image.naturalHeight / (width * image.naturalWidth);
       const size = Math.min(0.92, 0.4 / artRatio);
       image.style.width = (100 * size / width) + '%';
-      image.style.transform = `translate(${-100 * (facesLeft ? 1 - x : x)}%, ${-100 * y}%) scaleX(${facesLeft ? -1 : 1})`;
+      image.style.transform = `translate(${-100 * (mirrored ? 1 - x : x)}%, ${-100 * y}%) scaleX(${mirrored ? -1 : 1})`;
+      if (y + height / 2 > 0.98) image.style.clipPath = 'inset(0.6%)';
       frame.className = 'shoe-art-frame model-outline-ready';
       frame.setAttribute('aria-busy', 'false');
       image.alt = model.name + ' outline';
@@ -107,7 +114,7 @@ export function renderShoeArt(model, imageUrl, key) {
       frame.className = 'shoe-art-frame';
       frame.setAttribute('aria-busy', 'false');
     });
-    image.src = imageUrl;
+    image.src = source;
     frame.append(image);
   }
   figure.append(frame);
