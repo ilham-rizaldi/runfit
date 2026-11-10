@@ -7,9 +7,9 @@
   <meta name="description" content="Compare running shoe sizes against official brand charts using your measured foot length. Find shoe categories for road and trail running.">
   <title>Runfit — Running Shoe Fit Calculator</title>
   <link rel="icon" type="image/svg+xml" href="icon.svg">
-  <link rel="stylesheet" href="style.css?v=width-priority">
+  <link rel="stylesheet" href="style.css?v=one-pass">
   <script type="module">
-    import('./app.js?v=width-priority').catch(() => {
+    import('./app.js?v=one-pass').catch(() => {
       for (const id of ['brands', 'lineup-models']) {
         const panel = document.getElementById(id);
         panel.setAttribute('aria-busy', 'false');
@@ -108,13 +108,16 @@
           <h2 id="results-title">Your size by brand</h2>
           <p id="results-meta" class="section-note" aria-live="polite">Loading official charts…</p>
         </div>
-        <fieldset class="fit-control">
-          <legend class="sr-only">Sizing chart</legend>
-          <div class="switch fit-switch">
-            <label><input type="radio" name="fit" value="men" checked disabled><span>Men’s chart</span></label>
-            <label><input type="radio" name="fit" value="women" disabled><span>Women’s chart</span></label>
-          </div>
-        </fieldset>
+        <div class="results-controls">
+          <fieldset class="fit-control">
+            <legend class="sr-only">Sizing chart</legend>
+            <div class="switch fit-switch">
+              <label><input type="radio" name="fit" value="men" checked disabled><span>Men’s chart</span></label>
+              <label><input type="radio" name="fit" value="women" disabled><span>Women’s chart</span></label>
+            </div>
+          </fieldset>
+          <a class="reference-button" href="#lineup">View shoes ↓</a>
+        </div>
       </div>
       <div class="results-panel panel">
         <div class="table-heading row-grid" aria-hidden="true"><span>BRAND</span><span>EU</span><span>US</span><span>UK</span><span></span></div>
@@ -167,7 +170,7 @@
         <div id="lineup-catalog-link"></div>
       </div>
       <div id="lineup-models" class="lineup-grid" aria-busy="true"><span class="loading-card panel" aria-hidden="true"></span><span class="loading-card panel" aria-hidden="true"></span><span class="loading-card panel" aria-hidden="true"></span></div>
-      <button id="lineup-more" type="button" class="secondary lineup-more" hidden>Show more models</button>
+      <button id="lineup-more" type="button" class="secondary lineup-more" hidden>Show all models</button>
       <details class="official-catalogs panel">
         <summary><span>Official brand catalogs</span><span class="chevron" aria-hidden="true">+</span></summary>
         <div id="catalog-directory" class="catalog-directory"></div>

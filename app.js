@@ -84,11 +84,12 @@ const widthControls = [...document.querySelectorAll('input[name="width"]')];
 const modelDialog = element('model-dialog');
 const modelDialogHeading = element('model-dialog-heading');
 const modelDialogContent = element('model-dialog-content');
-const pageSize = 12;
+const previewSize = 12;
 const widthLabels = { narrow: 'Narrow', normal: 'Normal', wide: 'Wide' };
 const state = { length: 28.5, example: true, surface: 'road', fit: 'men', width: 'any' };
 const fitClasses = new Map(lineup.map(model => [model, modelFitClasses(model)]));
-let lineupLimit = pageSize;
+const chartMatches = new WeakMap();
+let showAllModels = false;
 let activeModelCard;
 
 function node(tag, className, text) {
@@ -166,11 +167,23 @@ function sizeText(row, index) {
   return String(row[index] ?? '–').replace(' 1/3', '⅓').replace(' 2/3', '⅔');
 }
 
+function sizeMatch(chart) {
+  const cached = chartMatches.get(chart);
+  if (cached?.length === state.length) return cached.match;
+  const match = findSize(chart, state.length);
+  chartMatches.set(chart, { length: state.length, match });
+  return match;
+}
+
+function sizeValues(match, index) {
+  return match.kind === 'choice' || match.kind === 'multiple'
+    ? [...new Set(match.candidates.map(row => sizeText(row, index)))].join(' / ')
+    : sizeText(match.primary, index);
+}
+
 function sizeCell(match, index, label) {
   const cell = node('span', index === 1 ? 'size size-eu' : 'size');
-  const multiple = match.kind === 'choice' || match.kind === 'multiple';
-  const sizes = multiple ? [...new Set(match.candidates.map(row => sizeText(row, index)))] : [sizeText(match.primary, index)];
-  cell.append(node('span', 'size-label', label), node('span', 'size-value', sizes.join(' / ')));
+  cell.append(node('span', 'size-label', label), node('span', 'size-value', sizeValues(match, index)));
   return cell;
 }
 
@@ -286,7 +299,7 @@ function renderBrands() {
         brand.reference?.reason ?? 'A measured chart for this sizing selection is unavailable.'));
       continue;
     }
-    const match = findSize(chart, state.length);
+    const match = sizeMatch(chart);
     if (match.primary) {
       matched.push(brandRow(brand, chart, match));
     } else {
@@ -507,12 +520,11 @@ function modelCard(model) {
   const width = modelWidth(model);
   const category = categoryById[model.category];
   const key = modelKey(model);
-  const profile = profiles[key];
-  const review = reviews[key];
   const source = modelSizeSource(model);
   const chart = source.chart;
   const eligible = chart && (!chart.fit || chart.fit === state.fit);
-  const match = eligible ? findSize(chart, state.length) : null;
+  const match = eligible ? sizeMatch(chart) : null;
+  const brandMatch = source.brandChart ? sizeMatch(source.brandChart) : null;
   const card = node('details', 'lineup-card panel');
   const summary = node('summary');
   const heading = node('span', 'lineup-heading');
@@ -529,13 +541,33 @@ function modelCard(model) {
     tag.append(node('small', null, 'Fit'), node('span', null, fit));
     meta.append(tag);
   }
-  const sizing = match?.primary && match.primary[1] != null
-    ? 'EU ' + (match.kind === 'choice' || match.kind === 'multiple' ? [...new Set(match.candidates.map(row => sizeText(row, 1)))].join(' / ') : sizeText(match.primary, 1))
-    : '';
-  if (sizing) meta.append(node('span', 'size-tag', sizing));
+  const recommendation = match?.primary ? match : brandMatch;
+  if (recommendation?.primary?.[1] != null) {
+    const label = match?.primary ? 'Model chart' : 'Brand chart';
+    meta.append(node('span', 'size-tag', 'EU ' + sizeValues(recommendation, 1) + ' · ' + label));
+  }
   summary.append(heading, renderShoeArt(model, shoeImages[key], key));
-  if (fit || sizing) summary.append(meta);
+  if (meta.children.length) summary.append(meta);
+  let detail;
+  const getDetail = () => detail ??= modelDetail(model, width, source, match, brandMatch);
+  summary.addEventListener('click', event => {
+    if (typeof modelDialog.showModal === 'function' && window.matchMedia('(min-width: 640px)').matches) {
+      event.preventDefault();
+      showModelDialog(model, card, getDetail());
+    }
+  });
+  card.addEventListener('toggle', () => {
+    if (card.open && !detail) card.append(getDetail());
+  });
+  card.append(summary);
+  return card;
+}
 
+function modelDetail(model, width, source, match, brandMatch) {
+  const key = modelKey(model);
+  const profile = profiles[key];
+  const review = reviews[key];
+  const chart = source.chart;
   const detail = node('div', 'lineup-detail');
   const specPanel = node('div', 'model-spec-panel');
   const sizingPanel = node('div', 'model-sizing');
@@ -567,22 +599,14 @@ function modelCard(model) {
     }
     sizingPanel.append(fullChart(chart, 'View full foot-length chart'));
   } else if (source.brandChart) {
-    const comparison = findSize(source.brandChart, state.length);
-    if (comparison.primary) {
-      sizingPanel.append(node('p', null, 'Brand chart at ' + fmt(state.length) + ' cm · ' + source.brandChart.market), sampleTable(comparison));
+    if (brandMatch?.primary) {
+      sizingPanel.append(node('p', null, 'Brand chart at ' + fmt(state.length) + ' cm · ' + source.brandChart.market), sampleTable(brandMatch));
     }
     sizingPanel.append(fullChart(source.brandChart, 'View full brand chart'));
   }
-  detail.append(modelCharacteristics(profile, review, category), specPanel);
+  detail.append(modelCharacteristics(profile, review, categoryById[model.category]), specPanel);
   if (sizingPanel.children.length) detail.append(sizingPanel);
-  summary.addEventListener('click', event => {
-    if (typeof modelDialog.showModal === 'function' && window.matchMedia('(min-width: 640px)').matches) {
-      event.preventDefault();
-      showModelDialog(model, card, detail);
-    }
-  });
-  card.append(summary, detail);
-  return card;
+  return detail;
 }
 
 function renderLineup() {
@@ -593,7 +617,7 @@ function renderLineup() {
     && terms.every(term => (modelKey(model) + ' ' + categoryById[model.category].name).toLowerCase().includes(term)));
   const priority = widthLabels[state.width];
   if (priority) models.sort((left, right) => widthRank(left) - widthRank(right));
-  const cards = models.slice(0, lineupLimit).map(modelCard);
+  const cards = (showAllModels ? models : models.slice(0, previewSize)).map(modelCard);
   element('lineup-models').replaceChildren(...(cards.length ? cards : [node('p', 'empty', 'No models match these filters.')]));
   const count = cards.length < models.length ? cards.length + ' of ' + models.length : models.length;
   const best = models.length ? widthRank(models[0]) : 2;
@@ -605,16 +629,11 @@ function renderLineup() {
   lineupMore.hidden = cards.length === models.length;
 }
 
-function resetLineup() {
-  lineupLimit = pageSize;
-  renderLineup();
-}
-
 function setCategory(category) {
   const selected = categories[state.surface].some(item => item.id === category) ? category : '';
   lineupCategory.value = selected;
   shoeType.value = selected;
-  resetLineup();
+  renderLineup();
 }
 
 function setSurface(surface, category = lineupCategory.value, brand) {
@@ -640,7 +659,7 @@ function setWidth(width) {
   lineupWidth.value = width;
   for (const control of widthControls) control.checked = control.value === width;
   renderBrands();
-  resetLineup();
+  renderLineup();
 }
 
 function calculate() {
@@ -661,8 +680,10 @@ function calculate() {
 form.addEventListener('submit', event => {
   event.preventDefault();
   if (calculate()) {
+    showAllModels = true;
     renderBrands();
     renderLineup();
+    element('results').scrollIntoView();
   }
 });
 input.addEventListener('input', clearError);
@@ -692,8 +713,8 @@ modelDialog.addEventListener('close', () => {
   modelDialogHeading.replaceChildren();
   activeModelCard = null;
 });
-lineupSearch.addEventListener('input', resetLineup);
-lineupBrand.addEventListener('change', resetLineup);
+lineupSearch.addEventListener('input', renderLineup);
+lineupBrand.addEventListener('change', renderLineup);
 lineupCategory.addEventListener('change', () => setCategory(lineupCategory.value));
 shoeType.addEventListener('change', () => {
   const category = shoeType.value;
@@ -702,7 +723,7 @@ shoeType.addEventListener('change', () => {
   else setCategory(category);
 });
 lineupMore.addEventListener('click', () => {
-  lineupLimit += pageSize;
+  showAllModels = true;
   renderLineup();
 });
 
