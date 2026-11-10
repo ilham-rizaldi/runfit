@@ -91,10 +91,14 @@ details[open] > summary .chevron { transform: rotate(45deg); }
 .brand-details { background: var(--panel-deep); border-top: 1px solid var(--edge); padding: 14px 17px 16px; color: var(--muted); font-size: 12px; line-height: 1.5; }
 .brand-details p + p { margin-top: 6px; }
 .brand-details strong { color: var(--text); }
-.chart-sample { margin-block: 9px 10px; border-collapse: collapse; text-align: left; }
-.chart-sample th, .chart-sample td { padding: 3px 19px 3px 0; }
-.chart-sample th { font: 10px var(--mono); color: var(--muted); }
-.chart-sample td { font: 12px var(--mono); }
+.chart-sample { width: min(100%, 25rem); margin-block: 9px 10px; border: 1px solid var(--edge); border-collapse: separate; border-spacing: 0; border-radius: 8px; overflow: hidden; text-align: left; }
+.chart-sample th, .chart-sample td { padding: 6px clamp(5px, 1vw, 12px); }
+.chart-sample :is(th, td):not(:first-child) { text-align: right; }
+.chart-sample th { border-bottom: 1px solid var(--edge); background: #272e24; font: 11px var(--mono); color: var(--muted); }
+.chart-sample td { font: 12px var(--mono); color: var(--text); }
+.chart-sample tbody tr:nth-child(odd) { background: var(--panel-deep); }
+.chart-sample tbody tr:nth-child(even) { background: #222820; }
+.chart-sample tbody tr.chosen { background: #304226; }
 .chart-sample .chosen td { color: var(--lime); }
 .source-links { display: flex; flex-wrap: wrap; align-items: center; gap: 5px 13px; }
 .source-link { color: var(--lime); text-underline-offset: 3px; font-weight: 650; }
@@ -198,7 +202,6 @@ details[open] > summary .chevron { transform: rotate(45deg); }
 .lineup-detail strong { color: var(--text); }
 .full-chart { margin-block: 7px; }
 .full-chart summary { width: fit-content; color: var(--lime); text-decoration: underline; text-underline-offset: 3px; }
-.lineup-detail .chart-sample th, .lineup-detail .chart-sample td { padding-right: 9px; }
 .lineup-more { margin-top: 10px; }
 .secondary { min-height: 37px; padding: 0 12px; border: 1px solid var(--edge); border-radius: 8px; background: var(--panel); color: var(--text); font-size: 12px; font-weight: 650; }
 .secondary:hover { color: var(--lime); border-color: #485b36; }
