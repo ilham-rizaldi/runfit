@@ -234,6 +234,7 @@ details[open] > summary .chevron { transform: rotate(45deg); }
 .sort-tag { align-self: center; color: var(--muted); font: 10px var(--mono); }
 .shoe-art-definitions { position: absolute; width: 0; height: 0; overflow: hidden; pointer-events: none; }
 .shoe-art { display: grid; justify-items: center; color: var(--lime); }
+.shoe-art:has(> .shoe-art-frame:empty) { display: none; }
 .shoe-art-frame { display: block; width: min(100%, 210px); height: 88px; position: relative; overflow: hidden; }
 .shoe-art-reference { position: absolute; top: 50%; left: 50%; height: auto; filter: url(#runfit-shoe-outline); clip-path: inset(2%); opacity: 0; }
 .model-outline-ready .shoe-art-reference { opacity: 1; }
