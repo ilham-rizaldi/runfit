@@ -1,4 +1,4 @@
-import { auditedShoePhotos, shoeArtLayout } from './shoe-art-layout.js?v=artwork-on-puma-altra';
+import { auditedShoePhotos, shoeArtLayout } from './shoe-art-layout.js?v=artwork-mizuno-trail';
 
 const svgNamespace = 'http://www.w3.org/2000/svg';
 const outlineId = 'runfit-shoe-outline';
