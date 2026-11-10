@@ -7,9 +7,9 @@
   <meta name="description" content="Compare running shoe sizes against official brand charts using your measured foot length. Find shoe categories for road and trail running.">
   <title>Runfit — Running Shoe Fit Calculator</title>
   <link rel="icon" type="image/svg+xml" href="icon.svg">
-  <link rel="stylesheet" href="style.css?v=clean-lineup">
+  <link rel="stylesheet" href="style.css?v=width-priority">
   <script type="module">
-    import('./app.js?v=clean-lineup').catch(() => {
+    import('./app.js?v=width-priority').catch(() => {
       for (const id of ['brands', 'lineup-models']) {
         const panel = document.getElementById(id);
         panel.setAttribute('aria-busy', 'false');
@@ -58,20 +58,47 @@
 
     <section id="calculator" class="calculator panel" aria-labelledby="calculator-title">
       <form id="fit-form" novalidate>
-        <div class="control">
-          <label id="calculator-title" for="length"><span class="step">01</span> Foot length</label>
-          <div class="input-wrap"><input id="length" name="length" value="28.5" inputmode="decimal" autocomplete="off" placeholder="28,5" aria-describedby="length-help error" required><span>cm</span></div>
+        <div class="control shoe-type-control">
+          <label id="calculator-title" for="shoe-type"><span class="step" aria-hidden="true">01</span> Shoe type</label>
+          <select id="shoe-type" name="shoe-type" disabled><option value="">All shoe types</option></select>
         </div>
         <fieldset class="control">
-          <legend><span class="step">02</span> Running surface</legend>
+          <legend><span class="step" aria-hidden="true">02</span> Running surface</legend>
           <div class="switch surface-switch">
             <label><input type="radio" name="surface" value="road" checked disabled><span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3 5 21M15 3l4 18M12 5v3m0 3v3m0 3v3"/></svg>Road</span></label>
             <label><input type="radio" name="surface" value="trail" disabled><span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m2 20 7-12 3 5 3-9 7 16H2Z"/></svg>Trail</span></label>
           </div>
         </fieldset>
+        <div class="control">
+          <label for="length"><span class="step" aria-hidden="true">03</span> Foot length</label>
+          <div class="input-wrap"><input id="length" name="length" value="28.5" inputmode="decimal" autocomplete="off" placeholder="28,5" aria-describedby="length-help error" required><span>cm</span></div>
+        </div>
+        <fieldset class="control width-control" aria-describedby="width-priority-help">
+          <legend><span class="step" aria-hidden="true">04</span> Width preference</legend>
+          <div class="switch width-switch">
+            <label><input type="radio" name="width" value="any" checked disabled><span>Any</span></label>
+            <label><input type="radio" name="width" value="narrow" disabled><span>Narrow</span></label>
+            <label><input type="radio" name="width" value="normal" disabled><span>Normal</span></label>
+            <label><input type="radio" name="width" value="wide" disabled><span>Wide</span></label>
+          </div>
+        </fieldset>
         <button id="calculate-size" class="primary" type="submit" disabled>Find my size <span aria-hidden="true">↗</span></button>
       </form>
-      <p id="length-help" class="input-help">Measure heel to longest toe while standing. Use the longer foot.</p>
+      <div class="calculator-help">
+        <p id="length-help" class="input-help">Measure heel to longest toe while standing. Use the longer foot.</p>
+        <details class="width-help">
+          <summary class="reference-button">How to choose your width</summary>
+          <p>Start with how standard-width shoes feel when the length is right.</p>
+          <dl>
+            <div><dt>Narrow</dt><dd>Extra space at the sides of your forefoot.</dd></div>
+            <div><dt>Normal</dt><dd>Secure across the forefoot with room to move your toes.</dd></div>
+            <div><dt>Wide</dt><dd>Pressure at the sides of your forefoot.</dd></div>
+          </dl>
+          <p>To measure, stand and measure across the widest part of both feet. Compare the wider foot with the brand’s width chart for your shoe size.</p>
+          <p id="width-priority-help">Your choice moves matching models up and keeps all widths visible. Extra Wide stays labeled separately.</p>
+          <a class="reference-button" href="https://www.newbalance.com/faqs/product-sizing/" target="_blank" rel="noopener noreferrer">Brand width guide ↗</a>
+        </details>
+      </div>
       <p id="error" class="error" role="alert" hidden></p>
     </section>
 
@@ -128,6 +155,12 @@
         <label>Search models<input id="lineup-search" type="search" placeholder="e.g. Speedgoat or mud" autocomplete="off" disabled></label>
         <label>Brand<select id="lineup-brand" disabled><option>All brands</option></select></label>
         <label>Use<select id="lineup-category" disabled><option>All uses</option></select></label>
+        <label>Width priority<select id="lineup-width" disabled>
+          <option value="any">Any width</option>
+          <option value="narrow">Narrow first</option>
+          <option value="normal">Normal first</option>
+          <option value="wide">Wide first</option>
+        </select></label>
       </div>
       <div class="lineup-toolbar">
         <p id="lineup-meta" class="section-note lineup-meta" aria-live="polite">Loading model lineup…</p>
@@ -158,5 +191,14 @@
     </section>
   </main>
   <footer class="shell site-footer"><a class="wordmark" href="./"><img src="icon.svg" width="27" height="27" alt="">runfit<span>.</span></a><span>Independent running shoe size guide</span></footer>
+  <dialog id="model-dialog" class="model-dialog panel" aria-labelledby="model-dialog-title">
+    <header class="model-dialog-header">
+      <div id="model-dialog-heading" class="model-dialog-heading"></div>
+      <form method="dialog">
+        <button class="model-dialog-close" aria-label="Close shoe details" autofocus>×</button>
+      </form>
+    </header>
+    <div id="model-dialog-content"></div>
+  </dialog>
 </body>
 </html>

@@ -72,15 +72,24 @@ const cmFormat = new Intl.NumberFormat('en', { maximumFractionDigits: 3 });
 const fmt = number => cmFormat.format(number);
 const element = id => document.getElementById(id);
 const form = element('fit-form');
+const shoeType = element('shoe-type');
 const input = element('length');
 const error = element('error');
 const lineupSearch = element('lineup-search');
 const lineupBrand = element('lineup-brand');
 const lineupCategory = element('lineup-category');
+const lineupWidth = element('lineup-width');
 const lineupMore = element('lineup-more');
+const widthControls = [...document.querySelectorAll('input[name="width"]')];
+const modelDialog = element('model-dialog');
+const modelDialogHeading = element('model-dialog-heading');
+const modelDialogContent = element('model-dialog-content');
 const pageSize = 12;
-const state = { length: 28.5, example: true, surface: 'road', fit: 'men' };
+const widthLabels = { narrow: 'Narrow', normal: 'Normal', wide: 'Wide' };
+const state = { length: 28.5, example: true, surface: 'road', fit: 'men', width: 'any' };
+const fitClasses = new Map(lineup.map(model => [model, modelFitClasses(model)]));
 let lineupLimit = pageSize;
+let activeModelCard;
 
 function node(tag, className, text) {
   const item = document.createElement(tag);
@@ -115,15 +124,40 @@ function modelWidth(model) {
   return model.widths ?? modelWidths[modelKey(model)];
 }
 
+function modelFit(model, width) {
+  return width?.options?.length ? widthText(width) : specs[modelKey(model)]?.official?.fit ?? specs[modelKey(model)]?.lab?.fit;
+}
+
+function modelFitClasses(model) {
+  const width = modelWidth(model);
+  const labels = width?.options?.length ? width.options : (modelFit(model, width) ?? '')
+    .split(/\.\s/)[0].split(/\s*(?:\/|\b(?:and|or)\b)\s*/i);
+  return labels.flatMap(text => {
+    const label = text.match(/^(?:runs\s+)?(extra[ -]wide|narrow|normal|medium|regular|standard|wide)(?=$|\s+(?:fit|width|overall|with)\b|\s*[.,(])/i)?.[1].toLowerCase();
+    if (!label) return [];
+    if (label.startsWith('extra')) return ['extra-wide'];
+    return [['medium', 'regular', 'standard'].includes(label) ? 'normal' : label];
+  });
+}
+
+function widthRank(model) {
+  const widths = fitClasses.get(model);
+  if (widths.includes(state.width)) return 0;
+  if (state.width === 'wide' && widths.includes('extra-wide')) return 1;
+  return 2;
+}
+
 function lineupLink(label, filters) {
   const link = node('a', 'source-link', label);
   link.href = '#lineup';
   link.addEventListener('click', () => {
-    if (filters.surface && filters.surface !== state.surface) setSurface(filters.surface);
     lineupSearch.value = filters.search ?? '';
-    lineupBrand.value = filters.brand ?? '';
-    lineupCategory.value = filters.category ?? '';
-    resetLineup();
+    if (filters.surface && filters.surface !== state.surface) {
+      setSurface(filters.surface, filters.category ?? '', filters.brand ?? '');
+    } else {
+      lineupBrand.value = filters.brand ?? '';
+      setCategory(filters.category ?? '');
+    }
   });
   return link;
 }
@@ -235,6 +269,14 @@ function renderBrands() {
   const matched = [];
   const unmatched = [];
   const availableBrands = brands.filter(brand => brand.surfaces.includes(state.surface));
+  if (state.width !== 'any') {
+    const ranks = new Map();
+    for (const model of lineup) {
+      if (model.surface === state.surface) ranks.set(model.brand, Math.min(ranks.get(model.brand) ?? 2, widthRank(model)));
+    }
+    const rank = brand => ranks.get(brandKey(brand.name)) ?? 2;
+    availableBrands.sort((left, right) => rank(left) - rank(right));
+  }
 
   for (const brand of availableBrands) {
     const chart = brand.charts?.[state.fit];
@@ -338,6 +380,22 @@ function setOptions(select, defaultText, options) {
   select.value = options.some(([value]) => value === previous) ? previous : '';
 }
 
+function renderShoeTypeOptions() {
+  const all = node('option', null, 'All shoe types');
+  all.value = '';
+  shoeType.replaceChildren(all);
+  for (const [surface, group] of Object.entries(categories)) {
+    const section = node('optgroup');
+    section.label = surfaceNames[surface];
+    for (const category of group) {
+      const option = node('option', null, category.name);
+      option.value = category.id;
+      section.append(option);
+    }
+    shoeType.append(section);
+  }
+}
+
 function updateLineupOptions() {
   const brandNames = [...new Set(lineup.filter(model => model.surface === state.surface).map(model => model.brand))];
   brandNames.sort((left, right) => left.localeCompare(right));
@@ -428,6 +486,23 @@ function modelSpecifications(modelSpecs, width, sources) {
   return section;
 }
 
+function showModelDialog(model, card, detail) {
+  if (activeModelCard) return;
+  activeModelCard = card;
+  card.open = false;
+  const title = node('h3', 'lineup-name', model.name);
+  title.id = 'model-dialog-title';
+  const titleWrap = node('div', 'lineup-title-wrap');
+  titleWrap.append(title, node('span', 'use-tag', categoryById[model.category].name));
+  const identity = node('div');
+  identity.append(node('p', 'lineup-brand', model.brand), titleWrap);
+  const key = modelKey(model);
+  modelDialogHeading.replaceChildren(identity, renderShoeArt(model, shoeImages[key], key));
+  modelDialogContent.replaceChildren(detail);
+  modelDialog.scrollTop = 0;
+  modelDialog.showModal();
+}
+
 function modelCard(model) {
   const width = modelWidth(model);
   const category = categoryById[model.category];
@@ -448,9 +523,9 @@ function modelCard(model) {
   plus.setAttribute('aria-hidden', 'true');
   heading.append(plus);
   const meta = node('span', 'lineup-card-meta');
-  const fit = width?.options?.length ? widthText(width) : specs[key]?.official?.fit ?? specs[key]?.lab?.fit;
+  const fit = modelFit(model, width);
   if (fit) {
-    const tag = node('span', 'fit-tag');
+    const tag = node('span', widthRank(model) === 0 ? 'fit-tag fit-priority' : 'fit-tag');
     tag.append(node('small', null, 'Fit'), node('span', null, fit));
     meta.append(tag);
   }
@@ -462,40 +537,50 @@ function modelCard(model) {
   if (fit || sizing) summary.append(meta);
 
   const detail = node('div', 'lineup-detail');
+  const specPanel = node('div', 'model-spec-panel');
+  const sizingPanel = node('div', 'model-sizing');
   const sources = new Map();
   if (review?.url) sources.set(review.url, 'RunRepeat');
   sources.set(model.url, 'Product');
   if (profile?.url && !sources.has(profile.url)) sources.set(profile.url, 'Brand notes');
   if (source.url && !sources.has(source.url)) sources.set(source.url, 'Size guide');
   if (source.brandChart?.url && !sources.has(source.brandChart.url)) sources.set(source.brandChart.url, 'Brand size chart');
-  detail.append(modelCharacteristics(profile, review, category), modelSpecifications(specs[key], width, sources));
+  specPanel.append(modelSpecifications(specs[key], width, sources));
   const links = node('div', 'source-links');
   for (const [url, label] of sources) links.append(externalLink(url, label + ' ↗'));
   const references = node('details', 'model-references');
   references.append(node('summary', 'reference-button', 'Sources'), links);
   if (width?.note) references.append(node('p', 'model-width-note', width.note));
-  detail.append(references);
-  if (model.sizeNote) detail.append(node('p', null, model.sizeNote));
-  if (source.reason) detail.append(node('p', null, source.reason));
+  specPanel.append(references);
+  if (model.sizeNote) sizingPanel.append(node('p', null, model.sizeNote));
+  if (source.reason) sizingPanel.append(node('p', null, source.reason));
   if (chart) {
-    if (chart.note) detail.append(node('p', null, chart.note));
+    if (chart.note) sizingPanel.append(node('p', null, chart.note));
     const fitScope = chart.fit === 'men' ? ' · Men’s chart' : chart.fit === 'women' ? ' · Women’s chart' : '';
-    if (chart.market) detail.append(node('p', null, chart.market + fitScope));
+    if (chart.market) sizingPanel.append(node('p', null, chart.market + fitScope));
     if (match?.primary) {
-      detail.append(node('p', null, fmt(state.length) + ' cm · ' + statusNames[match.kind]), sampleTable(match));
+      sizingPanel.append(node('p', null, fmt(state.length) + ' cm · ' + statusNames[match.kind]), sampleTable(match));
     } else if (match) {
-      detail.append(node('p', null, 'No model-chart match at ' + fmt(state.length) + ' cm.'));
+      sizingPanel.append(node('p', null, 'No model-chart match at ' + fmt(state.length) + ' cm.'));
     } else {
-      detail.append(node('p', null, 'This model chart uses a different sizing selection.'));
+      sizingPanel.append(node('p', null, 'This model chart uses a different sizing selection.'));
     }
-    detail.append(fullChart(chart, 'View full foot-length chart'));
+    sizingPanel.append(fullChart(chart, 'View full foot-length chart'));
   } else if (source.brandChart) {
     const comparison = findSize(source.brandChart, state.length);
     if (comparison.primary) {
-      detail.append(node('p', null, 'Brand chart at ' + fmt(state.length) + ' cm · ' + source.brandChart.market), sampleTable(comparison));
+      sizingPanel.append(node('p', null, 'Brand chart at ' + fmt(state.length) + ' cm · ' + source.brandChart.market), sampleTable(comparison));
     }
-    detail.append(fullChart(source.brandChart, 'View full brand chart'));
+    sizingPanel.append(fullChart(source.brandChart, 'View full brand chart'));
   }
+  detail.append(modelCharacteristics(profile, review, category), specPanel);
+  if (sizingPanel.children.length) detail.append(sizingPanel);
+  summary.addEventListener('click', event => {
+    if (typeof modelDialog.showModal === 'function' && window.matchMedia('(min-width: 640px)').matches) {
+      event.preventDefault();
+      showModelDialog(model, card, detail);
+    }
+  });
   card.append(summary, detail);
   return card;
 }
@@ -506,10 +591,15 @@ function renderLineup() {
     && (!lineupBrand.value || model.brand === lineupBrand.value)
     && (!lineupCategory.value || model.category === lineupCategory.value)
     && terms.every(term => (modelKey(model) + ' ' + categoryById[model.category].name).toLowerCase().includes(term)));
+  const priority = widthLabels[state.width];
+  if (priority) models.sort((left, right) => widthRank(left) - widthRank(right));
   const cards = models.slice(0, lineupLimit).map(modelCard);
   element('lineup-models').replaceChildren(...(cards.length ? cards : [node('p', 'empty', 'No models match these filters.')]));
   const count = cards.length < models.length ? cards.length + ' of ' + models.length : models.length;
-  element('lineup-meta').textContent = count + (models.length === 1 ? ' model' : ' models') + ' · ' + surfaceNames[state.surface];
+  const best = models.length ? widthRank(models[0]) : 2;
+  const order = !priority ? '' : best === 0 ? ' · ' + priority + ' first'
+    : best === 1 ? ' · Extra Wide options first' : ' · No documented ' + priority.toLowerCase() + ' matches';
+  element('lineup-meta').textContent = count + (models.length === 1 ? ' model' : ' models') + ' · ' + surfaceNames[state.surface] + order;
   const catalog = catalogs[lineupBrand.value]?.[state.surface];
   element('lineup-catalog-link').replaceChildren(...(catalog ? [externalLink(catalog, 'Official ' + lineupBrand.value + ' catalog ↗')] : []));
   lineupMore.hidden = cards.length === models.length;
@@ -520,7 +610,14 @@ function resetLineup() {
   renderLineup();
 }
 
-function setSurface(surface) {
+function setCategory(category) {
+  const selected = categories[state.surface].some(item => item.id === category) ? category : '';
+  lineupCategory.value = selected;
+  shoeType.value = selected;
+  resetLineup();
+}
+
+function setSurface(surface, category = lineupCategory.value, brand) {
   state.surface = surface;
   for (const control of document.querySelectorAll('input[name="surface"], input[name="lineup-surface"]')) {
     control.checked = control.value === surface;
@@ -528,13 +625,22 @@ function setSurface(surface) {
   if (parseLength(input.value) !== state.length) calculate();
   renderBrands();
   updateLineupOptions();
-  resetLineup();
+  if (brand !== undefined) lineupBrand.value = brand;
+  setCategory(category);
 }
 
 function clearError() {
   input.removeAttribute('aria-invalid');
   error.hidden = true;
   error.textContent = '';
+}
+
+function setWidth(width) {
+  state.width = width;
+  lineupWidth.value = width;
+  for (const control of widthControls) control.checked = control.value === width;
+  renderBrands();
+  resetLineup();
 }
 
 function calculate() {
@@ -572,9 +678,29 @@ for (const control of document.querySelectorAll('input[name="fit"]')) {
     renderLineup();
   });
 }
+for (const control of widthControls) {
+  control.disabled = false;
+  control.addEventListener('change', () => setWidth(control.value));
+}
+lineupWidth.addEventListener('change', () => setWidth(lineupWidth.value));
+modelDialog.addEventListener('click', event => {
+  if (event.target === modelDialog) modelDialog.close();
+});
+modelDialog.addEventListener('close', () => {
+  activeModelCard.append(modelDialogContent.firstElementChild);
+  activeModelCard.querySelector('summary').focus({ preventScroll: true });
+  modelDialogHeading.replaceChildren();
+  activeModelCard = null;
+});
 lineupSearch.addEventListener('input', resetLineup);
 lineupBrand.addEventListener('change', resetLineup);
-lineupCategory.addEventListener('change', resetLineup);
+lineupCategory.addEventListener('change', () => setCategory(lineupCategory.value));
+shoeType.addEventListener('change', () => {
+  const category = shoeType.value;
+  const surface = Object.keys(categories).find(key => categories[key].some(item => item.id === category));
+  if (surface && surface !== state.surface) setSurface(surface, category);
+  else setCategory(category);
+});
 lineupMore.addEventListener('click', () => {
   lineupLimit += pageSize;
   renderLineup();
@@ -584,7 +710,8 @@ installOutlineFilter();
 renderBrands();
 renderCategories();
 renderCatalogDirectory();
+renderShoeTypeOptions();
 updateLineupOptions();
 renderLineup();
-for (const control of [element('calculate-size'), lineupSearch, lineupBrand, lineupCategory]) control.disabled = false;
+for (const control of [element('calculate-size'), shoeType, lineupSearch, lineupBrand, lineupCategory, lineupWidth]) control.disabled = false;
 for (const id of ['brands', 'lineup-models']) element(id).setAttribute('aria-busy', 'false');
