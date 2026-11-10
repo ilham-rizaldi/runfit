@@ -7,9 +7,9 @@
   <meta name="description" content="Compare running shoe sizes against official brand charts using your measured foot length. Find shoe categories for road and trail running.">
   <title>Runfit — Running Shoe Fit Calculator</title>
   <link rel="icon" type="image/svg+xml" href="icon.svg">
-  <link rel="stylesheet" href="style.css?v=photo-only">
+  <link rel="stylesheet" href="style.css?v=brand-lineups">
   <script type="module">
-    import('./app.js?v=photo-only').catch(() => {
+    import('./app.js?v=brand-lineups').catch(() => {
       for (const id of ['brands', 'lineup-models']) {
         const panel = document.getElementById(id);
         panel.setAttribute('aria-busy', 'false');
@@ -26,8 +26,8 @@
     <a class="wordmark" href="./"><img src="icon.svg" width="34" height="34" alt="">runfit<span>.</span></a>
     <nav aria-label="Page navigation">
       <a href="#calculator">Calculator</a>
-      <a href="#shoe-types">Shoe types</a>
       <a href="#lineup">Lineup</a>
+      <a href="#shoe-types">Shoe types</a>
       <a href="#method">How it works</a>
     </nav>
     <span class="header-tag"><i></i> ROAD / TRAIL</span>
@@ -59,8 +59,11 @@
     <section id="calculator" class="calculator panel" aria-labelledby="calculator-title">
       <form id="fit-form" novalidate>
         <div class="control shoe-type-control">
-          <label id="calculator-title" for="shoe-type"><span class="step" aria-hidden="true">01</span> Shoe type</label>
-          <select id="shoe-type" name="shoe-type" disabled><option value="">All shoe types</option></select>
+          <span id="calculator-title" class="control-label"><span class="step" aria-hidden="true">01</span> Shoe type</span>
+          <details id="shoe-type" class="type-picker">
+            <summary aria-labelledby="calculator-title shoe-type-label"><span id="shoe-type-label">All shoe types</span></summary>
+            <div class="type-options" id="shoe-type-options"></div>
+          </details>
         </div>
         <fieldset class="control">
           <legend><span class="step" aria-hidden="true">02</span> Running surface</legend>
@@ -73,8 +76,12 @@
           <label for="length"><span class="step" aria-hidden="true">03</span> Foot length</label>
           <div class="input-wrap"><input id="length" name="length" value="28.5" inputmode="decimal" autocomplete="off" placeholder="28,5" aria-describedby="length-help error" required><span>cm</span></div>
         </div>
+        <div class="control brand-control">
+          <label for="calculator-brand"><span class="step" aria-hidden="true">04</span> Brand</label>
+          <select id="calculator-brand" disabled><option value="">All brands</option></select>
+        </div>
         <fieldset class="control width-control" aria-describedby="width-priority-help">
-          <legend><span class="step" aria-hidden="true">04</span> Width preference</legend>
+          <legend><span class="step" aria-hidden="true">05</span> Width preference</legend>
           <div class="switch width-switch">
             <label><input type="radio" name="width" value="any" checked disabled><span>Any</span></label>
             <label><input type="radio" name="width" value="narrow" disabled><span>Narrow</span></label>
@@ -102,13 +109,20 @@
       <p id="error" class="error" role="alert" hidden></p>
     </section>
 
-    <section id="results" class="results section" aria-labelledby="results-title">
+    <section id="lineup" class="section" aria-labelledby="lineup-title">
       <div class="section-head">
         <div>
-          <h2 id="results-title">Your size by brand</h2>
-          <p id="results-meta" class="section-note" aria-live="polite">Loading official charts…</p>
+          <h2 id="lineup-title" tabindex="-1">Explore the lineup</h2>
+          <p id="lineup-coverage" class="section-note">Compare official size guides and fit options model by model.</p>
         </div>
         <div class="results-controls">
+          <fieldset class="fit-control">
+            <legend class="sr-only">Lineup running surface</legend>
+            <div class="switch fit-switch">
+              <label><input type="radio" name="lineup-surface" value="road" checked disabled><span>Road</span></label>
+              <label><input type="radio" name="lineup-surface" value="trail" disabled><span>Trail</span></label>
+            </div>
+          </fieldset>
           <fieldset class="fit-control">
             <legend class="sr-only">Sizing chart</legend>
             <div class="switch fit-switch">
@@ -116,8 +130,50 @@
               <label><input type="radio" name="fit" value="women" disabled><span>Women’s chart</span></label>
             </div>
           </fieldset>
-          <a class="reference-button" href="#lineup">View shoes ↓</a>
+          <a class="reference-button" href="#results">Brand size charts ↓</a>
         </div>
+      </div>
+      <div class="lineup-filters panel">
+        <label>Search models<input id="lineup-search" type="search" placeholder="e.g. Speedgoat or mud" autocomplete="off" disabled></label>
+        <label>Brand<select id="lineup-brand" disabled><option value="">All brands</option></select></label>
+        <div class="lineup-filter">
+          <span id="lineup-category-title">Shoe type</span>
+          <details id="lineup-category" class="type-picker">
+            <summary aria-labelledby="lineup-category-title lineup-category-label"><span id="lineup-category-label">All shoe types</span></summary>
+            <div class="type-options" id="lineup-category-options"></div>
+          </details>
+        </div>
+        <label>Width priority<select id="lineup-width" disabled>
+          <option value="any">Any width</option>
+          <option value="narrow">Narrow first</option>
+          <option value="normal">Normal first</option>
+          <option value="wide">Wide first</option>
+        </select></label>
+        <label>Sort by<select id="lineup-sort" disabled>
+          <option value="brand">Brand A–Z</option>
+          <option value="weight">Lightest first</option>
+          <option value="drop">Lowest drop first</option>
+        </select></label>
+      </div>
+      <div class="lineup-toolbar">
+        <p id="lineup-meta" class="section-note lineup-meta" aria-live="polite">Loading model lineup…</p>
+        <div id="lineup-catalog-link"></div>
+      </div>
+      <div id="lineup-models" class="brand-lineups" aria-busy="true"><span class="loading-card panel" aria-hidden="true"></span><span class="loading-card panel" aria-hidden="true"></span><span class="loading-card panel" aria-hidden="true"></span></div>
+      <button id="lineup-more" type="button" class="secondary lineup-more" hidden>Show all models</button>
+      <details class="official-catalogs panel">
+        <summary><span>Official brand catalogs</span><span class="chevron" aria-hidden="true">+</span></summary>
+        <div id="catalog-directory" class="catalog-directory"></div>
+      </details>
+    </section>
+
+    <section id="results" class="results section" aria-labelledby="results-title">
+      <div class="section-head">
+        <div>
+          <h2 id="results-title">Your size by brand</h2>
+          <p id="results-meta" class="section-note" aria-live="polite">Loading official charts…</p>
+        </div>
+        <a class="reference-button" href="#lineup">View shoes ↑</a>
       </div>
       <div class="results-panel panel">
         <div class="table-heading row-grid" aria-hidden="true"><span>BRAND</span><span>EU</span><span>US</span><span>UK</span><span></span></div>
@@ -140,50 +196,13 @@
       <div id="category-detail" class="category-panel panel" aria-live="polite"></div>
     </section>
 
-    <section id="lineup" class="section" aria-labelledby="lineup-title">
-      <div class="section-head">
-        <div>
-          <h2 id="lineup-title">Explore the lineup</h2>
-          <p id="lineup-coverage" class="section-note">Compare official size guides and fit options model by model.</p>
-        </div>
-        <fieldset class="fit-control">
-          <legend class="sr-only">Lineup running surface</legend>
-          <div class="switch fit-switch">
-            <label><input type="radio" name="lineup-surface" value="road" checked disabled><span>Road</span></label>
-            <label><input type="radio" name="lineup-surface" value="trail" disabled><span>Trail</span></label>
-          </div>
-        </fieldset>
-      </div>
-      <div class="lineup-filters panel">
-        <label>Search models<input id="lineup-search" type="search" placeholder="e.g. Speedgoat or mud" autocomplete="off" disabled></label>
-        <label>Brand<select id="lineup-brand" disabled><option>All brands</option></select></label>
-        <label>Use<select id="lineup-category" disabled><option>All uses</option></select></label>
-        <label>Width priority<select id="lineup-width" disabled>
-          <option value="any">Any width</option>
-          <option value="narrow">Narrow first</option>
-          <option value="normal">Normal first</option>
-          <option value="wide">Wide first</option>
-        </select></label>
-      </div>
-      <div class="lineup-toolbar">
-        <p id="lineup-meta" class="section-note lineup-meta" aria-live="polite">Loading model lineup…</p>
-        <div id="lineup-catalog-link"></div>
-      </div>
-      <div id="lineup-models" class="lineup-grid" aria-busy="true"><span class="loading-card panel" aria-hidden="true"></span><span class="loading-card panel" aria-hidden="true"></span><span class="loading-card panel" aria-hidden="true"></span></div>
-      <button id="lineup-more" type="button" class="secondary lineup-more" hidden>Show all models</button>
-      <details class="official-catalogs panel">
-        <summary><span>Official brand catalogs</span><span class="chevron" aria-hidden="true">+</span></summary>
-        <div id="catalog-directory" class="catalog-directory"></div>
-      </details>
-    </section>
-
     <section id="method" class="method section" aria-labelledby="method-title">
       <div>
         <h2 id="method-title">How sizing works</h2>
       </div>
       <div class="method-grid">
         <article class="panel"><span>01</span><h3>Measure both feet</h3><p>Stand on paper with your heel against a wall. Mark the end of your longest toe. Measure both feet in your running socks and enter the longer length.</p></article>
-        <article class="panel"><span>02</span><h3>Compare official charts</h3><p>We match measured foot length against each brand’s chart and follow its instructions where available. Between rows, the default starting size is the next larger chart entry.</p></article>
+        <article class="panel"><span>02</span><h3>Compare official charts</h3><p>We match measured foot length against each brand’s chart and follow its instructions where available. Between rows, the default starting size is the next larger chart entry. CM and JP are size labels on the shoe, separate from measured foot length.</p></article>
         <article class="panel"><span>03</span><h3>Confirm the model fit</h3><p>Check the product’s chart, width options and heel hold before buying. On trails, test for toe contact on descents. Foot length alone cannot predict fit or width.</p></article>
       </div>
       <details class="data-notes">
