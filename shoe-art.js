@@ -1,4 +1,4 @@
-import { auditedShoePhotos, shoeArtLayout } from './shoe-art-layout.js?v=artwork-nnormal-topo';
+import { auditedShoePhotos, shoeArtLayout } from './shoe-art-layout.js?v=artwork-merrell-inov8';
 
 const svgNamespace = 'http://www.w3.org/2000/svg';
 const outlineId = 'runfit-shoe-outline';
@@ -54,6 +54,7 @@ export function renderShoeArt(model, imageUrl, key) {
       image.style.width = (100 * size / width) + '%';
       image.style.transform = `translate(${-100 * (mirrored ? 1 - x : x)}%, ${-100 * y}%) scaleX(${mirrored ? -1 : 1})`;
       if (y + height / 2 > 0.98) image.style.clipPath = 'inset(0.6%)';
+      else if (x - width / 2 < 0.02 || x + width / 2 > 0.98) image.style.clipPath = 'inset(2% 0.4%)';
       frame.className = 'shoe-art-frame model-outline-ready';
       frame.setAttribute('aria-busy', 'false');
       image.alt = model.name + ' outline';
