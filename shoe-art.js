@@ -1,3 +1,5 @@
+import { shoeArtLayout } from './shoe-art-layout.js';
+
 const svgNamespace = 'http://www.w3.org/2000/svg';
 const outlineId = 'runfit-shoe-outline';
 
@@ -13,12 +15,12 @@ export function installOutlineFilter() {
   const filter = svgElement('filter', { id: outlineId, 'color-interpolation-filters': 'sRGB' });
   filter.append(
     svgElement('feColorMatrix', { type: 'saturate', values: '0' }),
-    svgElement('feGaussianBlur', { stdDeviation: '0.4' }),
+    svgElement('feGaussianBlur', { stdDeviation: '0.4', edgeMode: 'duplicate' }),
     svgElement('feConvolveMatrix', {
-      order: '3', kernelMatrix: '-1 -1 -1 -1 8 -1 -1 -1 -1', preserveAlpha: 'true'
+      order: '3', kernelMatrix: '-1 -1 -1 -1 8 -1 -1 -1 -1', edgeMode: 'duplicate', preserveAlpha: 'true'
     }),
     svgElement('feColorMatrix', {
-      type: 'matrix', values: '0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  3 0 0 0 0', result: 'edges'
+      type: 'matrix', values: '0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  4 0 0 0 -.12', result: 'edges'
     }),
     svgElement('feFlood', { 'flood-color': '#c8f575' }),
     svgElement('feComposite', { in2: 'edges', operator: 'in' })
@@ -74,39 +76,40 @@ function categoryOutline(model) {
   return art;
 }
 
-export function renderShoeArt(model, imageUrl) {
+export function renderShoeArt(model, imageUrl, key) {
   const figure = document.createElement('span');
   figure.className = 'shoe-art';
   const frame = document.createElement('span');
   frame.className = 'shoe-art-frame';
-  const svg = svgElement('svg', { viewBox: '0 0 320 120', 'aria-hidden': 'true' });
-  const caption = document.createElement('span');
-  caption.className = 'shoe-art-caption';
-  caption.textContent = 'Category illustration';
+  const svg = svgElement('svg', { viewBox: '20 17 282 96', role: 'img', 'aria-label': 'Category illustration' });
   svg.append(categoryOutline(model));
   frame.append(svg);
-  if (imageUrl) {
+  const layout = shoeArtLayout[key];
+  if (imageUrl && layout) {
     const image = document.createElement('img');
     image.className = 'shoe-art-reference';
     image.alt = '';
     image.loading = 'lazy';
     image.decoding = 'async';
     frame.setAttribute('aria-busy', 'true');
-    caption.textContent = 'Loading model outline…';
     image.addEventListener('load', () => {
+      const [x, y, width, height, facesLeft] = layout;
+      const artRatio = height * image.naturalHeight / (width * image.naturalWidth);
+      const size = Math.min(0.92, 0.4 / artRatio);
+      image.style.width = (100 * size / width) + '%';
+      image.style.transform = `translate(${-100 * (facesLeft ? 1 - x : x)}%, ${-100 * y}%) scaleX(${facesLeft ? -1 : 1})`;
       frame.className = 'shoe-art-frame model-outline-ready';
       frame.setAttribute('aria-busy', 'false');
-      caption.textContent = 'Model outline · official image';
+      image.alt = model.name + ' outline';
     });
     image.addEventListener('error', () => {
       image.remove();
       frame.className = 'shoe-art-frame';
       frame.setAttribute('aria-busy', 'false');
-      caption.textContent = 'Category illustration';
     });
     image.src = imageUrl;
     frame.append(image);
   }
-  figure.append(frame, caption);
+  figure.append(frame);
   return figure;
 }

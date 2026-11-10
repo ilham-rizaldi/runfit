@@ -33,9 +33,9 @@ import { specialSpecs } from './specs-special.js';
 import { remainingSpecs } from './specs-remaining.js';
 import { shoeImageSources } from './shoe-image-sources.js';
 import { coreShoeImages } from './shoe-image-core.js';
-import { globalShoeImages } from './shoe-image-global.js';
+import { globalShoeImages } from './shoe-image-global.js?v=clean-lineup';
 import { trailShoeImages } from './shoe-image-trail.js';
-import { installOutlineFilter, renderShoeArt } from './shoe-art.js';
+import { installOutlineFilter, renderShoeArt } from './shoe-art.js?v=clean-lineup';
 
 const brands = [...core, ...major, ...trail, ...more];
 const brandWidths = { ...coreWidths, ...majorWidths, ...trailWidths, ...moreWidths };
@@ -89,7 +89,7 @@ function node(tag, className, text) {
   return item;
 }
 
-function externalLink(url, label, className = 'source-link') {
+function externalLink(url, label, className = 'reference-button') {
   const link = node('a', className, label);
   link.href = url;
   link.target = '_blank';
@@ -161,7 +161,7 @@ function sampleTable(match) {
 
 function fullChart(chart, label) {
   const disclosure = node('details', 'full-chart');
-  disclosure.append(node('summary', null, label));
+  disclosure.append(node('summary', 'reference-button', label));
   disclosure.addEventListener('toggle', () => {
     if (disclosure.open && disclosure.children.length === 1) {
       disclosure.append(sampleTable({ candidates: chart.rows }));
@@ -190,7 +190,8 @@ function brandRow(brand, chart, match) {
   const name = node('span', 'brand-identity');
   const key = brandKey(brand.name);
   const width = brandWidths[key];
-  name.append(node('span', 'brand-name', brand.name), node('span', 'brand-width', widthText(width)));
+  name.append(node('span', 'brand-name', brand.name));
+  if (width?.options?.length) name.append(node('span', 'brand-width', widthText(width)));
   const chevron = node('span', 'chevron', '+');
   chevron.setAttribute('aria-hidden', 'true');
   summary.append(name, sizeCell(match, 1, 'EU'), sizeCell(match, 2, 'US'), sizeCell(match, 3, 'UK'), chevron);
@@ -366,14 +367,12 @@ function modelSizeSource(model) {
   const brandChart = brand?.charts?.[state.fit];
   if (model.chart || model.charts || model.sizeUrl) {
     const chart = model.charts?.[state.fit] ?? model.chart ?? model.charts?.men ?? model.charts?.women;
-    const label = model.sizeKind === 'embedded' ? 'Brand guide on product page' : 'Model size guide';
-    return { label, url: chart?.url ?? model.sizeUrl ?? model.url, chart,
+    return { url: chart?.url ?? model.sizeUrl ?? model.url, chart,
       brandChart: model.sizeKind === 'embedded' && !chart ? brandChart : null,
       reason: !chart && !brandChart ? brand?.reference?.reason : null };
   }
-  if (brandChart) return { label: 'Brand size guide', url: brandChart.url, brandChart };
-  if (brand?.reference) return { label: 'Brand guide · reference only', ...brand.reference };
-  return { label: 'Sizing guide unavailable' };
+  if (brandChart) return { url: brandChart.url, brandChart };
+  return brand?.reference ?? {};
 }
 
 function modelCharacteristics(profile, review, category) {
@@ -384,20 +383,23 @@ function modelCharacteristics(profile, review, category) {
     ['Ride & feel', 'feel', 'Model-specific ride details unavailable.'],
     ['Best when', 'best', category.summary]
   ];
+  const reviewOnly = fields.every(([, field]) => review?.[field]);
+  if (reviewOnly) section.append(node('small', 'profile-source runrepeat-source', 'RunRepeat'));
   for (const [label, field, fallback] of fields) {
     const entry = node('div');
     const value = review?.[field] ?? profile?.[field];
     const detail = node('dd', null, value ?? fallback);
-    const source = review?.[field] ? 'RunRepeat' : value ? 'Manufacturer' : field !== 'feel' ? 'Category guide' : '';
-    if (source) detail.append(document.createTextNode(' '), node('small', 'profile-source', source));
-    entry.append(node('dt', null, label), detail);
+    const source = review?.[field] ? 'RunRepeat' : value && review ? 'Brand' : !value && field !== 'feel' ? 'Category guide' : '';
+    const title = node('dt', null, label);
+    if (source && !reviewOnly) title.append(node('small', 'profile-source' + (source === 'RunRepeat' ? ' runrepeat-source' : ''), source));
+    entry.append(title, detail);
     entries.append(entry);
   }
   section.append(entries);
   return section;
 }
 
-function modelSpecifications(modelSpecs, width) {
+function modelSpecifications(modelSpecs, width, sources) {
   const section = node('section', 'model-specifications');
   const grid = node('dl', 'spec-grid');
   const fields = [ ['Weight', 'weight'], ['Heel stack', 'heel'], ['Forefoot stack', 'forefoot'], ['Drop', 'drop'], ['Fit', 'fit'] ];
@@ -411,13 +413,14 @@ function modelSpecifications(modelSpecs, width) {
       : field === 'fit' ? value.replace(/^(?:medium|standard|regular)(?= width|$)/i, 'Normal') : fmt(value) + ' mm';
     const item = node('div', field === 'fit' ? 'spec-item spec-fit' : 'spec-item');
     const data = node('dd', hasValue ? 'spec-value' : 'spec-value unavailable', formatted);
-    item.append(node('dt', null, label), data);
+    const heading = node('dt', null, label);
+    item.append(heading, data);
     if (hasValue) {
-      const source = node('dd', 'spec-meta');
       const url = variant ? width.url : official != null ? modelSpecs.official.url : modelSpecs.lab.url;
-      source.append(externalLink(url, official != null ? 'Brand ↗' : 'RunRepeat lab ↗'));
-      if (field === 'weight') source.append(node('span', null, value.size ?? 'Size unspecified'));
-      item.append(source);
+      const source = official != null ? 'Brand' : 'Lab';
+      heading.append(node('small', 'spec-origin', source));
+      if (url && !sources.has(url)) sources.set(url, variant ? 'Fit' : source === 'Lab' ? 'RunRepeat lab' : 'Brand specs');
+      if (field === 'weight' && value.size) item.append(node('dd', 'spec-meta', value.size));
     }
     grid.append(item);
   }
@@ -438,28 +441,40 @@ function modelCard(model) {
   const card = node('details', 'lineup-card panel');
   const summary = node('summary');
   const heading = node('span', 'lineup-heading');
-  heading.append(node('span', 'lineup-brand', model.brand), node('strong', 'lineup-name', model.name));
+  const title = node('span', 'lineup-title-wrap');
+  title.append(node('strong', 'lineup-name', model.name), node('span', 'use-tag', category.name));
+  heading.append(node('span', 'lineup-brand', model.brand), title);
   const plus = node('span', 'chevron', '+');
   plus.setAttribute('aria-hidden', 'true');
   heading.append(plus);
   const meta = node('span', 'lineup-card-meta');
-  meta.append(node('span', null, category.name), node('span', null, widthText(width)));
+  const fit = width?.options?.length ? widthText(width) : specs[key]?.official?.fit ?? specs[key]?.lab?.fit;
+  if (fit) {
+    const tag = node('span', 'fit-tag');
+    tag.append(node('small', null, 'Fit'), node('span', null, fit));
+    meta.append(tag);
+  }
   const sizing = match?.primary && match.primary[1] != null
-    ? 'EU ' + (match.kind === 'choice' || match.kind === 'multiple' ? [...new Set(match.candidates.map(row => sizeText(row, 1)))].join(' / ') : sizeText(match.primary, 1)) + ' · ' + source.label
-    : source.label;
-  summary.append(heading, renderShoeArt(model, shoeImages[key]), meta);
-  const preview = review?.expect ?? profile?.expect;
-  if (preview) summary.append(node('span', 'lineup-preview', preview));
-  summary.append(node('span', 'lineup-sizing', sizing));
+    ? 'EU ' + (match.kind === 'choice' || match.kind === 'multiple' ? [...new Set(match.candidates.map(row => sizeText(row, 1)))].join(' / ') : sizeText(match.primary, 1))
+    : '';
+  if (sizing) meta.append(node('span', 'size-tag', sizing));
+  summary.append(heading, renderShoeArt(model, shoeImages[key], key));
+  if (fit || sizing) summary.append(meta);
 
   const detail = node('div', 'lineup-detail');
-  detail.append(modelCharacteristics(profile, review, category), modelSpecifications(specs[key], width));
-  const links = node('p', 'source-links');
-  if (review?.url) links.append(externalLink(review.url, 'RunRepeat review ↗'));
-  links.append(externalLink(model.url, 'Official product ↗'));
-  if (profile?.url && profile.url !== model.url) links.append(externalLink(profile.url, 'Manufacturer notes ↗'));
-  if (source.url) links.append(externalLink(source.url, source.label + ' ↗'));
-  detail.append(links);
+  const sources = new Map();
+  if (review?.url) sources.set(review.url, 'RunRepeat');
+  sources.set(model.url, 'Product');
+  if (profile?.url && !sources.has(profile.url)) sources.set(profile.url, 'Brand notes');
+  if (source.url && !sources.has(source.url)) sources.set(source.url, 'Size guide');
+  if (source.brandChart?.url && !sources.has(source.brandChart.url)) sources.set(source.brandChart.url, 'Brand size chart');
+  detail.append(modelCharacteristics(profile, review, category), modelSpecifications(specs[key], width, sources));
+  const links = node('div', 'source-links');
+  for (const [url, label] of sources) links.append(externalLink(url, label + ' ↗'));
+  const references = node('details', 'model-references');
+  references.append(node('summary', 'reference-button', 'Sources'), links);
+  if (width?.note) references.append(node('p', 'model-width-note', width.note));
+  detail.append(references);
   if (model.sizeNote) detail.append(node('p', null, model.sizeNote));
   if (source.reason) detail.append(node('p', null, source.reason));
   if (chart) {
@@ -478,11 +493,9 @@ function modelCard(model) {
     const comparison = findSize(source.brandChart, state.length);
     if (comparison.primary) {
       detail.append(node('p', null, 'Brand chart at ' + fmt(state.length) + ' cm · ' + source.brandChart.market), sampleTable(comparison));
-      if (source.brandChart.url !== source.url) detail.append(externalLink(source.brandChart.url, 'Chart used for this comparison ↗'));
     }
     detail.append(fullChart(source.brandChart, 'View full brand chart'));
   }
-  detail.append(widthDetail(width, 'Published model widths'));
   card.append(summary, detail);
   return card;
 }

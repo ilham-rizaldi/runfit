@@ -7,9 +7,9 @@
   <meta name="description" content="Compare running shoe sizes against official brand charts using your measured foot length. Find shoe categories for road and trail running.">
   <title>Runfit — Running Shoe Fit Calculator</title>
   <link rel="icon" type="image/svg+xml" href="icon.svg">
-  <link rel="stylesheet" href="style.css?v=chart-results">
+  <link rel="stylesheet" href="style.css?v=clean-lineup">
   <script type="module">
-    import('./app.js?v=chart-results').catch(() => {
+    import('./app.js?v=clean-lineup').catch(() => {
       for (const id of ['brands', 'lineup-models']) {
         const panel = document.getElementById(id);
         panel.setAttribute('aria-busy', 'false');
@@ -78,7 +78,6 @@
     <section id="results" class="results section" aria-labelledby="results-title">
       <div class="section-head">
         <div>
-          <p class="eyebrow"><span></span> 01 / SIZE COMPARISON</p>
           <h2 id="results-title">Your size by brand</h2>
           <p id="results-meta" class="section-note" aria-live="polite">Loading official charts…</p>
         </div>
@@ -103,9 +102,8 @@
     <section id="shoe-types" class="section" aria-labelledby="shoe-title">
       <div class="section-head">
         <div>
-          <p class="eyebrow"><span></span> 02 / SHOE CLASSIFICATION</p>
           <h2 id="shoe-title">Choose your shoe type</h2>
-          <p class="section-note">Choose by workout on Road, or by terrain, distance and conditions on Trail. Some shoes suit more than one use.</p>
+          <p class="section-note">Choose by workout, distance or terrain.</p>
         </div>
       </div>
       <div id="category-tabs" class="category-groups" aria-label="Road and trail shoe categories"></div>
@@ -115,7 +113,6 @@
     <section id="lineup" class="section" aria-labelledby="lineup-title">
       <div class="section-head">
         <div>
-          <p class="eyebrow"><span></span> 03 / MODEL SIZE GUIDES</p>
           <h2 id="lineup-title">Explore the lineup</h2>
           <p id="lineup-coverage" class="section-note">Compare official size guides and fit options model by model.</p>
         </div>
@@ -140,14 +137,12 @@
       <button id="lineup-more" type="button" class="secondary lineup-more" hidden>Show more models</button>
       <details class="official-catalogs panel">
         <summary><span>Official brand catalogs</span><span class="chevron" aria-hidden="true">+</span></summary>
-        <p class="section-note">Browse each brand’s current collection. Regional models and availability can vary.</p>
         <div id="catalog-directory" class="catalog-directory"></div>
       </details>
     </section>
 
     <section id="method" class="method section" aria-labelledby="method-title">
       <div>
-        <p class="eyebrow"><span></span> 04 / MEASUREMENT & SOURCES</p>
         <h2 id="method-title">How sizing works</h2>
       </div>
       <div class="method-grid">
@@ -155,10 +150,11 @@
         <article class="panel"><span>02</span><h3>Compare official charts</h3><p>We match measured foot length against each brand’s chart and follow its instructions where available. Between rows, the default starting size is the next larger chart entry.</p></article>
         <article class="panel"><span>03</span><h3>Confirm the model fit</h3><p>Check the product’s chart, width options and heel hold before buying. On trails, test for toe contact on descents. Foot length alone cannot predict fit or width.</p></article>
       </div>
-      <p class="method-note">Chart snapshot · 10 Nov 2026. Each result links to its manufacturer source and identifies the market. Road and Trail filter the brands and shoe categories. The same brand chart can apply to both surfaces.</p>
-      <p class="method-note">Width labels describe options published for the cited market or model. Normal includes the labels Regular, Standard and Medium. Foot length cannot identify your width.</p>
-      <p class="method-note">Expand a size result to see the chart measurements and any brand adjustments.</p>
-      <p class="method-note">Shoe specs use brand figures first and RunRepeat lab figures where available. Weight is per shoe at the listed sample size.</p>
+      <details class="data-notes">
+        <summary class="reference-button">Data notes</summary>
+        <p class="method-note">Chart snapshot · 10 Nov 2026. Expand a size result to see the source market and any brand adjustments.</p>
+        <p class="method-note">Normal includes Regular, Standard and Medium. Weight is per shoe at the stated sample size. Specs use brand figures first and RunRepeat lab measurements when available.</p>
+      </details>
     </section>
   </main>
   <footer class="shell site-footer"><a class="wordmark" href="./"><img src="icon.svg" width="27" height="27" alt="">runfit<span>.</span></a><span>Independent running shoe size guide</span></footer>
