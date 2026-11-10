@@ -11,7 +11,7 @@ const products = {
     ['Aero Blaze 4', 'road', 'daily', 'https://id.salomon.com/en/products/aero-blaze-4-l45395500'],
     ['Aero Glide 4', 'road', 'long-run', 'https://www.salomon.com/en-us/product/aero-glide-4-li8681'],
     ['S/LAB Phantasm 3', 'road', 'race', 'https://www.salomon.com/en-us/product/s-lab-phantasm-3-li8687'],
-    ['Speedcross 6', 'trail', 'technical', 'https://www.salomon.com/en-us/product/speedcross-6-lg9212'],
+    ['Speedcross 6', 'trail', 'mud', 'https://www.salomon.com/en-us/product/speedcross-6-lg9212'],
     ['S/LAB Ultra Glide 2', 'trail', 'ultra', 'https://www.salomon.com/en-us/product/s-lab-ultra-glide-2-li1865/L45484100'],
   ],
   ASICS: [

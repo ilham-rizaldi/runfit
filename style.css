@@ -213,3 +213,30 @@ details[open] > summary .chevron { transform: rotate(45deg); }
 @media (max-width: 340px) {
   .site-header nav a:nth-child(2) { display: none; }
 }
+.category-groups { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-bottom: 10px; }
+.category-group { padding: 13px; }
+.category-group h3 { font-size: 17px; letter-spacing: -.02em; }
+.category-group > p { color: var(--muted); font-size: 12px; margin-top: 3px; }
+.category-group .category-tabs { margin: 10px 0 0; }
+.category-group .category-tabs button { min-height: 36px; }
+.category-surface { display: inline-block; color: var(--lime); font: 10px var(--mono); text-transform: uppercase; letter-spacing: .09em; margin-bottom: 5px; }
+.category-panel p.category-check { margin-block: 12px 4px; }
+.category-panel > div > .source-link { font-size: 12px; }
+.lineup-toolbar { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 3px 12px; }
+#lineup-catalog-link { margin-bottom: 8px; font-size: 12px; }
+.official-catalogs { margin-top: 14px; }
+.official-catalogs > summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 11px 15px; font-size: 13px; font-weight: 700; }
+.official-catalogs > summary:focus-visible { outline-offset: -3px; }
+.official-catalogs > p { margin: 0; padding: 0 15px 10px; }
+.catalog-directory { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0 16px; padding: 0 15px 10px; }
+.catalog-brand { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 5px 8px; padding: 8px 0; border-top: 1px solid var(--edge); font-size: 12px; }
+.catalog-brand .source-links { gap: 5px 8px; }
+@media (max-width: 760px) {
+  .catalog-directory { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 520px) {
+  .category-groups { grid-template-columns: 1fr; }
+  .category-group { padding: 11px; }
+  .category-group .category-tabs button { min-height: 34px; }
+  .catalog-brand { display: grid; justify-content: initial; }
+}

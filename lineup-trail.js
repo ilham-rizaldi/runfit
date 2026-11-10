@@ -42,7 +42,7 @@ export const trailLineup = [
   embeddedModel('NNormal', 'Kjerag Brut', 'technical', 'https://www.nnormal.com/en_US/producto?option=N1ZKSM1-001'),
 
   embeddedModel('INOV8', 'Trailfly Max', 'ultra', 'https://www.inov8.com/us/trailfly-max-mens'),
-  embeddedModel('INOV8', 'Mudtalon Speed V2', 'technical', mudtalonSpeed, {
+  embeddedModel('INOV8', 'Mudtalon Speed V2', 'mud', mudtalonSpeed, {
     widths: { options: ['Narrow', 'Wide'], url: mudtalonSpeed, note: 'INOV8 calls the closer fit Precision. This model also comes in Wide.' }
   }),
   embeddedModel('INOV8', 'Roadfly', 'daily', roadfly, {

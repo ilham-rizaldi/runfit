@@ -7,8 +7,8 @@
   <meta name="description" content="Compare running shoe sizes against official brand charts using your measured foot length. Find shoe categories for road and trail running.">
   <title>Runfit — Running Shoe Fit Calculator</title>
   <link rel="icon" type="image/svg+xml" href="icon.svg">
-  <link rel="stylesheet" href="style.css">
-  <script type="module" src="app.js"></script>
+  <link rel="stylesheet" href="style.css?v=lineup-2">
+  <script type="module" src="app.js?v=lineup-2"></script>
 </head>
 <body>
   <a class="skip" href="#calculator">Skip to calculator</a>
@@ -95,10 +95,10 @@
         <div>
           <p class="eyebrow"><span></span> 02 / SHOE CLASSIFICATION</p>
           <h2 id="shoe-title">Choose your shoe type</h2>
-          <p id="category-meta" class="section-note">Pick the type of run you do most often.</p>
+          <p class="section-note">Choose by workout on Road, or by terrain, distance and conditions on Trail. Some shoes suit more than one use.</p>
         </div>
       </div>
-      <div id="category-tabs" class="category-tabs" aria-label="Shoe categories"></div>
+      <div id="category-tabs" class="category-groups" aria-label="Road and trail shoe categories"></div>
       <div id="category-detail" class="category-panel panel" aria-live="polite"></div>
     </section>
 
@@ -107,7 +107,7 @@
         <div>
           <p class="eyebrow"><span></span> 03 / MODEL SIZE GUIDES</p>
           <h2 id="lineup-title">Explore the lineup</h2>
-          <p class="section-note">Compare official size guides and fit options model by model.</p>
+          <p id="lineup-coverage" class="section-note">Compare official size guides and fit options model by model.</p>
         </div>
         <fieldset class="fit-control">
           <legend class="sr-only">Lineup running surface</legend>
@@ -118,13 +118,21 @@
         </fieldset>
       </div>
       <div class="lineup-filters panel">
-        <label>Search models<input id="lineup-search" type="search" placeholder="e.g. Speedgoat" autocomplete="off"></label>
+        <label>Search models<input id="lineup-search" type="search" placeholder="e.g. Speedgoat or mud" autocomplete="off"></label>
         <label>Brand<select id="lineup-brand"></select></label>
         <label>Use<select id="lineup-category"></select></label>
       </div>
-      <p id="lineup-meta" class="section-note lineup-meta" aria-live="polite"></p>
+      <div class="lineup-toolbar">
+        <p id="lineup-meta" class="section-note lineup-meta" aria-live="polite"></p>
+        <div id="lineup-catalog-link"></div>
+      </div>
       <div id="lineup-models" class="lineup-grid"></div>
       <button id="lineup-more" type="button" class="secondary lineup-more" hidden>Show more models</button>
+      <details class="official-catalogs panel">
+        <summary><span>Official brand catalogs</span><span class="chevron" aria-hidden="true">+</span></summary>
+        <p class="section-note">Browse each brand’s current collection. Regional models and availability can vary.</p>
+        <div id="catalog-directory" class="catalog-directory"></div>
+      </details>
     </section>
 
     <section id="method" class="method section" aria-labelledby="method-title">

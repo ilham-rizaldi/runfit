@@ -2,15 +2,20 @@ import { core } from './charts-core.js';
 import { major } from './charts-major.js';
 import { trail } from './charts-trail.js';
 import { more } from './charts-more.js';
-import { categories } from './categories.js';
+import { categories } from './categories.js?v=lineup-2';
 import { findSize, parseLength } from './fit.js';
 import { coreWidths, coreModelWidths } from './width-core.js';
 import { majorWidths, majorModelWidths } from './width-major.js';
 import { trailWidths, trailModelWidths } from './width-trail.js';
 import { moreWidths } from './width-more.js';
-import { mainLineup } from './lineup-main.js';
-import { trailLineup } from './lineup-trail.js';
+import { mainLineup } from './lineup-main.js?v=lineup-2';
+import { trailLineup } from './lineup-trail.js?v=lineup-2';
 import { moreLineup } from './lineup-more.js';
+import { expandedCore, coreCatalogs } from './lineup-expanded-core.js';
+import { expandedGlobal, globalCatalogs } from './lineup-expanded-global.js';
+import { expandedMountain, mountainCatalogs } from './lineup-expanded-mountain.js';
+import { expandedSpecial, specialCatalogs } from './lineup-expanded-special.js';
+import { expandedRemaining, remainingCatalogs } from './lineup-expanded-remaining.js';
 
 const brands = [...core, ...major, ...trail, ...more];
 const brandWidths = { ...coreWidths, ...majorWidths, ...trailWidths, ...moreWidths };
@@ -18,14 +23,21 @@ const modelWidths = { ...coreModelWidths, ...majorModelWidths, ...trailModelWidt
 const brandKey = name => name.split(' · ')[0];
 const modelKey = ({ brand, name }) => brand + ' ' + name;
 const examples = Object.entries(categories).flatMap(([surface, group]) => group.flatMap(category =>
-  category.models.map(model => ({ ...model, surface, category: category.id }))));
+  (category.models ?? []).map(model => ({ ...model, surface, category: category.id }))));
+const expanded = [...expandedCore, ...expandedGlobal, ...expandedMountain, ...expandedSpecial, ...expandedRemaining];
+const catalogs = { ...coreCatalogs, ...globalCatalogs, ...mountainCatalogs, ...specialCatalogs, ...remainingCatalogs };
 const productMap = new Map();
-for (const model of [...examples, ...mainLineup, ...trailLineup, ...moreLineup]) {
+for (const model of [...examples, ...mainLineup, ...trailLineup, ...moreLineup, ...expanded]) {
   const key = modelKey(model).toLowerCase() + '/' + model.surface;
   productMap.set(key, { ...productMap.get(key), ...model });
 }
 const lineup = [...productMap.values()];
 const surfaceNames = { road: 'Road', trail: 'Trail' };
+const categoryNames = Object.fromEntries(Object.values(categories).flat().map(category => [category.id, category.name]));
+const typeGuides = {
+  road: 'https://www.asics.com/gb/en-gb/asics-advice/asics-running-shoes-which-ones-are-right-for-you/',
+  trail: 'https://www.salomon.com/en-gb/sg/a/how-to-choose-your-trail-running-shoes'
+};
 const undisclosed = 'Undisclosed by brand';
 const statusNames = {
   exact: 'Exact chart row', next: 'Next larger size', nearest: 'Nearest chart row',
@@ -43,7 +55,7 @@ const lineupBrand = element('lineup-brand');
 const lineupCategory = element('lineup-category');
 const lineupMore = element('lineup-more');
 const pageSize = 12;
-const state = { length: 28.5, example: true, surface: 'road', fit: 'men', category: null };
+const state = { length: 28.5, example: true, surface: 'road', fit: 'men' };
 let lineupLimit = pageSize;
 
 function node(tag, className, text) {
@@ -83,6 +95,7 @@ function lineupLink(label, filters) {
   const link = node('a', 'source-link', label);
   link.href = '#lineup';
   link.addEventListener('click', () => {
+    if (filters.surface && filters.surface !== state.surface) setSurface(filters.surface);
     lineupSearch.value = filters.search ?? '';
     lineupBrand.value = filters.brand ?? '';
     lineupCategory.value = filters.category ?? '';
@@ -229,15 +242,22 @@ function renderBrands() {
     + surfaceNames[state.surface] + ' · ' + fit + ' · ' + count + ' across ' + availableBrands.length + ' charts';
 }
 
-function renderCategoryDetail(category) {
+function renderCategoryDetail(category, surface) {
   const info = node('div');
   const features = node('ul', 'features');
   for (const feature of category.features) features.append(node('li', null, feature));
-  info.append(node('h3', null, category.name), node('p', null, category.summary), features);
+  const fitCheck = node('p', 'category-check');
+  fitCheck.append(node('strong', null, 'Fit check '), document.createTextNode(category.check));
+  info.append(node('span', 'category-surface', surfaceNames[surface]), node('h3', null, category.name),
+    node('p', null, category.summary), features, fitCheck,
+    externalLink(typeGuides[surface], surfaceNames[surface] + ' shoe guide ↗'));
 
   const models = node('div', 'model-list');
   models.append(node('h4', null, 'EXAMPLE MODELS'));
-  for (const model of category.models) {
+  const matches = lineup.filter(model => model.category === category.id && model.surface === surface);
+  const exampleBrands = [...new Set(matches.map(model => model.brand))].slice(0, 2);
+  for (const brand of exampleBrands) {
+    const model = matches.find(item => item.brand === brand);
     const link = externalLink(model.url, null, 'model-link');
     const arrow = node('span', null, '↗');
     arrow.setAttribute('aria-hidden', 'true');
@@ -246,32 +266,42 @@ function renderCategoryDetail(category) {
     link.append(name, arrow);
     models.append(link);
   }
-  models.append(lineupLink('Browse this category ↓', { category: category.id }));
+  if (matches.length) {
+    models.append(lineupLink('Browse ' + matches.length + (matches.length === 1 ? ' model ↓' : ' models ↓'), { category: category.id, surface }));
+  } else {
+    models.append(node('p', null, 'Model examples are unavailable for this category.'));
+  }
   element('category-detail').replaceChildren(info, models);
 }
 
 function renderCategories() {
-  const group = categories[state.surface];
-  const active = group.find(category => category.id === state.category) ?? group[0];
-  state.category = active.id;
   const options = element('category-tabs');
   options.replaceChildren();
-  element('category-meta').textContent = state.surface === 'trail'
-    ? 'Choose by terrain, distance or pace. Several categories can suit the same route.'
-    : 'Choose by how you plan to use the shoe.';
-  for (const category of group) {
-    const button = node('button', null, category.name);
-    button.type = 'button';
-    button.setAttribute('aria-pressed', String(category.id === active.id));
-    button.setAttribute('aria-controls', 'category-detail');
-    button.addEventListener('click', () => {
-      state.category = category.id;
-      for (const option of options.children) option.setAttribute('aria-pressed', String(option === button));
-      renderCategoryDetail(category);
-    });
-    options.append(button);
+  const buttons = [];
+  for (const [surface, group] of Object.entries(categories)) {
+    const panel = node('div', 'category-group panel');
+    const description = surface === 'road' ? 'Pavement · Workout & race distance' : 'Off-road · Terrain, distance & conditions';
+    const heading = node('h3', null, surfaceNames[surface]);
+    heading.id = 'category-' + surface;
+    panel.setAttribute('role', 'group');
+    panel.setAttribute('aria-labelledby', heading.id);
+    const chips = node('div', 'category-tabs');
+    for (const category of group) {
+      const button = node('button', null, category.name);
+      button.type = 'button';
+      button.setAttribute('aria-pressed', String(category.id === 'daily'));
+      button.setAttribute('aria-controls', 'category-detail');
+      button.addEventListener('click', () => {
+        for (const option of buttons) option.setAttribute('aria-pressed', String(option === button));
+        renderCategoryDetail(category, surface);
+      });
+      buttons.push(button);
+      chips.append(button);
+    }
+    panel.append(heading, node('p', null, description), chips);
+    options.append(panel);
   }
-  renderCategoryDetail(active);
+  renderCategoryDetail(categories.road[0], 'road');
 }
 
 function setOptions(select, defaultText, options) {
@@ -289,6 +319,22 @@ function updateLineupOptions() {
   brandNames.sort((left, right) => left.localeCompare(right));
   setOptions(lineupBrand, 'All brands', brandNames.map(name => [name, name]));
   setOptions(lineupCategory, 'All uses', categories[state.surface].map(category => [category.id, category.name]));
+}
+
+function renderCatalogDirectory() {
+  const entries = Object.entries(catalogs).sort(([left], [right]) => left.localeCompare(right));
+  const rows = entries.map(([brand, surfaces]) => {
+    const item = node('div', 'catalog-brand');
+    const links = node('div', 'source-links');
+    for (const [surface, url] of Object.entries(surfaces)) {
+      if (url) links.append(externalLink(url, surfaceNames[surface] + ' ↗'));
+    }
+    item.append(node('strong', null, brand), links);
+    return item;
+  });
+  element('catalog-directory').replaceChildren(...rows);
+  element('lineup-coverage').textContent = lineup.length + ' indexed models · '
+    + new Set(lineup.map(model => model.brand)).size + ' international brands';
 }
 
 function modelSizeSource(model) {
@@ -313,7 +359,6 @@ function modelCard(model) {
   const chart = source.chart;
   const eligible = chart && (!chart.fit || chart.fit === state.fit);
   const match = eligible ? findSize(chart, state.length) : null;
-  const use = categories[model.surface].find(category => category.id === model.category);
   const card = node('details', 'lineup-card panel');
   const summary = node('summary');
   const heading = node('span', 'lineup-heading');
@@ -322,7 +367,7 @@ function modelCard(model) {
   plus.setAttribute('aria-hidden', 'true');
   heading.append(plus);
   const meta = node('span', 'lineup-card-meta');
-  meta.append(node('span', null, use?.name ?? surfaceNames[model.surface]), node('span', null, widthText(width)));
+  meta.append(node('span', null, categoryNames[model.category]), node('span', null, widthText(width)));
   const sizing = match?.primary && match.primary[1] != null
     ? 'EU ' + (match.kind === 'choice' || match.kind === 'multiple' ? [...new Set(match.candidates.map(row => sizeText(row, 1)))].join(' / ') : sizeText(match.primary, 1)) + ' · ' + source.label
     : source.label;
@@ -361,15 +406,17 @@ function modelCard(model) {
 }
 
 function renderLineup() {
-  const query = lineupSearch.value.trim().toLowerCase();
+  const terms = lineupSearch.value.toLowerCase().split(/[^\p{L}\p{N}]+/u).filter(Boolean);
   const models = lineup.filter(model => model.surface === state.surface
     && (!lineupBrand.value || model.brand === lineupBrand.value)
     && (!lineupCategory.value || model.category === lineupCategory.value)
-    && modelKey(model).toLowerCase().includes(query));
+    && terms.every(term => (modelKey(model) + ' ' + categoryNames[model.category]).toLowerCase().includes(term)));
   const cards = models.slice(0, lineupLimit).map(modelCard);
   element('lineup-models').replaceChildren(...(cards.length ? cards : [node('p', 'empty', 'No models match these filters.')]));
   const count = cards.length < models.length ? cards.length + ' of ' + models.length : models.length;
   element('lineup-meta').textContent = count + (models.length === 1 ? ' model' : ' models') + ' · ' + surfaceNames[state.surface];
+  const catalog = catalogs[lineupBrand.value]?.[state.surface];
+  element('lineup-catalog-link').replaceChildren(...(catalog ? [externalLink(catalog, 'Official ' + lineupBrand.value + ' catalog ↗')] : []));
   lineupMore.hidden = cards.length === models.length;
 }
 
@@ -380,13 +427,11 @@ function resetLineup() {
 
 function setSurface(surface) {
   state.surface = surface;
-  state.category = null;
   for (const control of document.querySelectorAll('input[name="surface"], input[name="lineup-surface"]')) {
     control.checked = control.value === surface;
   }
   if (parseLength(input.value) !== state.length) calculate();
   renderBrands();
-  renderCategories();
   updateLineupOptions();
   resetLineup();
 }
@@ -440,5 +485,6 @@ lineupMore.addEventListener('click', () => {
 
 renderBrands();
 renderCategories();
+renderCatalogDirectory();
 updateLineupOptions();
 renderLineup();
