@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#111311">
+  <meta name="description" content="Compare running shoe sizes against official brand charts using your measured foot length. Find shoe categories for road and trail running.">
+  <title>Runfit — Running Shoe Fit Calculator</title>
+  <link rel="icon" type="image/svg+xml" href="icon.svg">
+  <link rel="stylesheet" href="style.css">
+  <script type="module" src="app.js"></script>
+</head>
+<body>
+  <a class="skip" href="#calculator">Skip to calculator</a>
+  <header class="site-header shell">
+    <a class="wordmark" href="./"><img src="icon.svg" width="34" height="34" alt="">runfit<span>.</span></a>
+    <nav aria-label="Page navigation">
+      <a href="#calculator">Calculator</a>
+      <a href="#shoe-types">Shoe types</a>
+      <a href="#lineup">Lineup</a>
+      <a href="#method">How it works</a>
+    </nav>
+    <span class="header-tag"><i></i> ROAD / TRAIL</span>
+  </header>
+  <main class="shell">
+    <noscript><p class="empty">Enable JavaScript to compare sizes.</p></noscript>
+    <section class="hero" aria-labelledby="title">
+      <div class="hero-copy">
+        <p class="eyebrow"><span></span> RUNNING SHOE FIT CALCULATOR</p>
+        <h1 id="title">Find your<br>running <em>fit.</em></h1>
+        <p>Measure your foot once. Compare official sizes across running brands and find a shoe category for your next run.</p>
+      </div>
+      <div class="hero-visual" aria-hidden="true">
+        <svg viewBox="0 0 440 240" fill="none">
+          <defs>
+            <pattern id="grid" width="22" height="22" patternUnits="userSpaceOnUse"><path d="M22 0H0V22" stroke="#33392c" stroke-width="1"/></pattern>
+          </defs>
+          <path d="M0 0h440v240H0z" fill="url(#grid)"/>
+          <path d="M288 15c-4 26-24 37-23 61 0 34 54 56 58 84 4 32-39 33-65 65m61-225c5 33-30 47-27 72 4 28 52 44 62 77 13 45-41 51-60 91m54-240c-1 35-35 45-31 70 5 25 55 45 67 74 17 40-34 62-48 96m47-240c-4 31-45 48-41 70 4 23 56 44 70 71 21 41-29 71-41 99m45-240c-5 30-48 52-44 72 4 19 49 41 68 65m-27 103c5-20 19-31 27-51M258 0c5 34-23 46-24 75-1 39 57 68 58 93 1 24-44 28-68 72" stroke="#343b2c"/>
+          <path d="M35 111h36l19-15 24 8 30-23 26 8 44-31 30 22 26-13 32 21 37-17 20 8h40" stroke="#c8f575" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" opacity=".65"/>
+          <path d="M31 174h368M31 163v22m368-22v22M53 169v10m22-10v10m22-10v10m22-10v10m22-10v10m22-10v10m22-10v10m22-10v10m22-10v10m22-10v10m22-10v10m22-10v10m22-10v10m22-10v10m22-10v10m22-10v10" stroke="#c8f575"/>
+          <path d="M31 156v-31m368 31v-31" stroke="#a1ab94" stroke-dasharray="2 3" opacity=".6"/>
+          <circle cx="31" cy="174" r="3" fill="#c8f575"/><circle cx="399" cy="174" r="3" fill="#c8f575"/>
+          <g fill="#a6ae9d" font-size="9" font-family="monospace" letter-spacing="1"><text x="32" y="208">HEEL</text><text x="336" y="208">LONGEST TOE</text><text x="32" y="31">01 / FOOT LENGTH</text></g>
+        </svg>
+      </div>
+    </section>
+
+    <section id="calculator" class="calculator panel" aria-labelledby="calculator-title">
+      <form id="fit-form" novalidate>
+        <div class="control">
+          <label id="calculator-title" for="length"><span class="step">01</span> Foot length</label>
+          <div class="input-wrap"><input id="length" name="length" value="28.5" inputmode="decimal" autocomplete="off" placeholder="28,5" aria-describedby="length-help error" required><span>cm</span></div>
+        </div>
+        <fieldset class="control">
+          <legend><span class="step">02</span> Running surface</legend>
+          <div class="switch surface-switch">
+            <label><input type="radio" name="surface" value="road" checked><span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3 5 21M15 3l4 18M12 5v3m0 3v3m0 3v3"/></svg>Road</span></label>
+            <label><input type="radio" name="surface" value="trail"><span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m2 20 7-12 3 5 3-9 7 16H2Z"/></svg>Trail</span></label>
+          </div>
+        </fieldset>
+        <button class="primary" type="submit">Find my size <span aria-hidden="true">↗</span></button>
+      </form>
+      <p id="length-help" class="input-help">Measure heel to longest toe while standing. Use the longer foot.</p>
+      <p id="error" class="error" role="alert" hidden></p>
+    </section>
+
+    <section id="results" class="results section" aria-labelledby="results-title">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow"><span></span> 01 / SIZE COMPARISON</p>
+          <h2 id="results-title">Your size by brand</h2>
+          <p id="results-meta" class="section-note" aria-live="polite">Loading official charts…</p>
+        </div>
+        <fieldset class="fit-control">
+          <legend class="sr-only">Sizing chart</legend>
+          <div class="switch fit-switch">
+            <label><input type="radio" name="fit" value="men" checked><span>Men’s chart</span></label>
+            <label><input type="radio" name="fit" value="women"><span>Women’s chart</span></label>
+          </div>
+        </fieldset>
+      </div>
+      <div class="results-panel panel">
+        <div class="table-heading row-grid" aria-hidden="true"><span>BRAND</span><span>EU</span><span>US</span><span>UK</span><span>CHART MATCH</span><span></span></div>
+        <div id="brands"></div>
+      </div>
+      <details id="other-charts" class="other-charts panel" hidden>
+        <summary><span id="other-title">Other charts</span><span class="chevron" aria-hidden="true">+</span></summary>
+        <div id="other-list"></div>
+      </details>
+    </section>
+
+    <section id="shoe-types" class="section" aria-labelledby="shoe-title">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow"><span></span> 02 / SHOE CLASSIFICATION</p>
+          <h2 id="shoe-title">Choose your shoe type</h2>
+          <p id="category-meta" class="section-note">Pick the type of run you do most often.</p>
+        </div>
+      </div>
+      <div id="category-tabs" class="category-tabs" aria-label="Shoe categories"></div>
+      <div id="category-detail" class="category-panel panel" aria-live="polite"></div>
+    </section>
+
+    <section id="lineup" class="section" aria-labelledby="lineup-title">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow"><span></span> 03 / MODEL SIZE GUIDES</p>
+          <h2 id="lineup-title">Explore the lineup</h2>
+          <p class="section-note">Compare official size guides and fit options model by model.</p>
+        </div>
+        <fieldset class="fit-control">
+          <legend class="sr-only">Lineup running surface</legend>
+          <div class="switch fit-switch">
+            <label><input type="radio" name="lineup-surface" value="road" checked><span>Road</span></label>
+            <label><input type="radio" name="lineup-surface" value="trail"><span>Trail</span></label>
+          </div>
+        </fieldset>
+      </div>
+      <div class="lineup-filters panel">
+        <label>Search models<input id="lineup-search" type="search" placeholder="e.g. Speedgoat" autocomplete="off"></label>
+        <label>Brand<select id="lineup-brand"></select></label>
+        <label>Use<select id="lineup-category"></select></label>
+      </div>
+      <p id="lineup-meta" class="section-note lineup-meta" aria-live="polite"></p>
+      <div id="lineup-models" class="lineup-grid"></div>
+      <button id="lineup-more" type="button" class="secondary lineup-more" hidden>Show more models</button>
+    </section>
+
+    <section id="method" class="method section" aria-labelledby="method-title">
+      <div>
+        <p class="eyebrow"><span></span> 04 / MEASUREMENT & SOURCES</p>
+        <h2 id="method-title">How sizing works</h2>
+      </div>
+      <div class="method-grid">
+        <article class="panel"><span>01</span><h3>Measure both feet</h3><p>Stand on paper with your heel against a wall. Mark the end of your longest toe. Measure both feet in your running socks and enter the longer length.</p></article>
+        <article class="panel"><span>02</span><h3>Compare official charts</h3><p>We match measured foot length against each brand’s chart and follow its instructions where available. Between rows, the default starting size is the next larger chart entry.</p></article>
+        <article class="panel"><span>03</span><h3>Confirm the model fit</h3><p>Check the product’s chart, width options and heel hold before buying. On trails, test for toe contact on descents. Foot length alone cannot predict fit or width.</p></article>
+      </div>
+      <p class="method-note">Chart snapshot · 10 Nov 2026. Each result links to its manufacturer source and identifies the market. Road and Trail filter the brands and shoe categories. The same brand chart can apply to both surfaces.</p>
+      <p class="method-note">Width labels describe options published for the cited market or model. Normal includes the labels Regular, Standard and Medium. Foot length cannot identify your width.</p>
+    </section>
+  </main>
+  <footer class="shell site-footer"><a class="wordmark" href="./"><img src="icon.svg" width="27" height="27" alt="">runfit<span>.</span></a><span>Independent running shoe size guide</span></footer>
+</body>
+</html>
